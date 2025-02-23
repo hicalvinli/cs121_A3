@@ -38,7 +38,7 @@ def partial_indexer(indexer: dict, file_count: int) -> None:
 def _write_sub_final(bucket: tuple):
     # Writes the final index of each bucket into its corresponding file.
     global FINAL
-    with open(f"{str(bucket[0])}-{str(bucket[-1])}", "w") as f:
+    with open(f"{str(bucket[0])}-{str(bucket[-1])}", "w") as f: # new file with bucket range
         json.dump(FINAL, f)
     FINAL = dict()
 
@@ -50,9 +50,9 @@ def _split_indexes(pindex: int, bucket: tuple) -> None:
         # it into main memory all at once.
         for token, sub_info in ijson.kvitems(f, ''):
             if token[0] in bucket:
-                total_info = FINAL.get(token, {})
-                total_info.update(sub_info)
-                FINAL[token] = total_info
+                total_info = FINAL.get(token, {}) # check if token already exists in the final index
+                total_info.update(sub_info) # add additional document info to the token
+                FINAL[token] = total_info # update the final index with the additional information
 
 def merge_indexes(file_num: int) -> None:
     # Merges all partial indexes alphabetically, writing each partial into a split range index
