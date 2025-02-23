@@ -12,14 +12,9 @@ def porter_stem(tokens):
     return [stemmer.stem(token) for token in tokens]
 
 def retrieve_important(tree: etree.ElementTree):
-    # Retrieve the content from the bold, header, and title tags
-    return ''.join(tree.xpath("//b|//title|//h"))
+    # Retrieve the unique tokens from the bold, header, and title tags
+    return set(tokenize(''.join(tree.xpath("//b|//title|//h"))))
 
 def retrieve_content(tree: etree.ElementTree):
-    # Remove the bold, header, and title tags
-    to_drop = tree.xpath('//b|//title|//h')
-    for tag in to_drop:
-        tag.getparent().remove(tag)
-
     # Get all text content
-    return ''.join(tree.xpath("//text()"))
+    return tokenize(''.join(tree.xpath("//text()")))
