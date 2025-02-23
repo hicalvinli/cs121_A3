@@ -1,6 +1,7 @@
 import re
 import nltk
 import json
+import ijson
 from lxml import etree
 
 def _tokenize(text: str) -> list[str]:
@@ -33,3 +34,20 @@ def partial_indexer(indexer: dict, file_count: int) -> None:
         json.dump(indexer, f)
 
 
+def _split_indexes(pindex: int, bucket: tuple) -> None:
+    # Splits indexes based on range.
+    final_ind = dict()
+    with open(f"indexed_{pindex}", 'r') as f:
+        for chr in bucket:
+            token = ijson.kvitems(f, '')
+        # ijson turns partial index into an iterator, avoiding reading
+        # it into main memory all at once.
+
+
+
+def merge_indexes(file_num: int) -> None:
+    # Merges all partial indexes alphabetically, writing each partial into a split range index
+    index_buckets = [(0, 9), ('a', 'g'), ('h', 'o'), ('p', 'z')]
+    for bucket in index_buckets:
+        for pindex in range(1, file_num + 1):
+            _split_indexes(file_num, bucket)

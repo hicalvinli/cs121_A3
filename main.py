@@ -5,7 +5,7 @@ from collections import namedtuple
 # named tuple will contain (wordfrequency, importance)
 
 THRESHOLD = 15000 # for every 15k pages, partially index into disk memory (new file, indexed_{num})
-FILE_COUNT = 0 # count for number of partial indexes
+FILE_COUNT = 1 # count for number of partial indexes
 
 Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
 
@@ -22,4 +22,5 @@ index = dict()
 # 5) populate the index
     # 5a) create a var. to count number of files scraped, or loop until threshold is met. call partial
     # indexer after.
+    # 5b) set counter variable back to 0 for next batch of 15k files
 
