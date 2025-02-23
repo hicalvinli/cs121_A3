@@ -35,30 +35,24 @@ def partial_indexer(indexer: dict, file_count: int) -> None:
     with open(f"indexed_{file_count}", "w") as f:
         json.dump(indexer, f)
 
-def _write_sub_final(bucket: list):
+def _write_sub_final(bucket: tuple):
+    # Writes the final index of each bucket into its corresponding file.
     global FINAL
-    with open(f"index_{str(bucket[0])}-{str(bucket[-1])}", "w") as f:
+    with open(f"{str(bucket[0])}-{str(bucket[-1])}", "w") as f:
         json.dump(FINAL, f)
     FINAL = dict()
-
-def _iter_tokens(chr: str, tokens):
-    global FINAL
-    for token, sub_info in tokens:
-        if token.startswith(chr):
-            total_info = FINAL.get(token, {})
-            FINAL[token] = total_info.add(sub_info)
-
 
 def _split_indexes(pindex: int, bucket: tuple) -> None:
     # Splits indexes based on range.
     global FINAL
     with open(f"indexed_{pindex}", 'r') as f:
-        for chr in bucket:
-            # ijson turns partial index into an iterator, avoiding reading
-            # it into main memory all at once.
-            tokens = ijson.kvitems(f, '')
-            _iter_tokens(chr, tokens)
-
+        # ijson turns partial index into an iterator, avoiding reading
+        # it into main memory all at once.
+        for token, sub_info in ijson.kvitems(f, ''):
+            if token[0] in bucket:
+                total_info = FINAL.get(token, {})
+                total_info.update(sub_info)
+                FINAL[token] = total_info
 
 def merge_indexes(file_num: int) -> None:
     # Merges all partial indexes alphabetically, writing each partial into a split range index
@@ -69,6 +63,6 @@ def merge_indexes(file_num: int) -> None:
                      ('p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')]
     for bucket in index_buckets:
         for pindex in range(1, file_num + 1):
-            _split_indexes(file_num, bucket)
-            FINAL = _alpha_sort(FINAL)
-            _write_sub_final(bucket)
+            _split_indexes(pindex, bucket)
+        FINAL = _alpha_sort(FINAL)
+        _write_sub_final(bucket)
