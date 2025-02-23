@@ -30,31 +30,41 @@ def updateIndex(word, importance):
 
 
 # 1) Loop through the JSON files and load them and get their content
+# 1.5) need to check sum and simhash
 def main():
+    print("starting")
     file_count = 0
-    for files in os.listdir("rsrc/DEV-2"):
+    relative = "rsrc/DEV-2"
+    for folder in os.listdir(relative):
+        print(file_count)
         file_count += 1
-        with open(files, "r") as file:
-            jsondata = json.load(file)
-        try:
-            tree = etree.fromstring(jsondata['content'], etree.HTMLParser())
-            # 2) retrieve important
-            important_list = retrieve_important(tree)
-            # 3) retrieve content
-            regular_list = retrieve_content(tree)
-            # 4) populate the INDEX
-            # 5a) create a var. to count number of files scraped, or loop until threshold is met. call partial
-            # INDEXer after.
-            # 5b) set counter variable back to 0 for next batch of 15k files
-            for word in important_list:
-                updateIndex(word, 1)
-            for word in regular_list:
-                updateIndex(word, 0)
-        except Exception as e:
-            print("failed tree")
+        folder = os.path.join(os.path.abspath(relative), folder)
+        for file in os.listdir(folder):
+            file = os.path.join(folder, file)
+            with open(file, "r") as file:
+                jsondata = json.load(file)
+            try:
+                print(jsondata['content'])
+                tree = etree.fromstring(jsondata["content"], etree.HTMLParser())
+                # 2) retrieve important
+                important_list = retrieve_important(tree)
+                # 3) retrieve content
+                regular_list = retrieve_content(tree)
+                # 4) populate the INDEX
+                # 5a) create a var. to count number of files scraped, or loop until threshold is met. call partial
+                # INDEXer after.
+                # 5b) set counter variable back to 0 for next batch of 15k files
+                for word in important_list:
+                    updateIndex(word, 1)
+                for word in regular_list:
+                    updateIndex(word, 0)
+            except Exception as e:
+                print(f"failed tree {e}")
 
     with open("data.json", "w") as file:
         json.dump(INDEX, file)
 
     print("DUMPED")
 
+if __name__ == "__main__":
+    main()
