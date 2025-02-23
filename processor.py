@@ -17,4 +17,4 @@ def retrieve_important(tree: etree.ElementTree) -> set[str]:
 
 def retrieve_content(tree: etree.ElementTree) -> list[str]:
     # Get all text content
-    return tokenize(''.join(tree.xpath("//text()")))
+    return porter_stem(tokenize(''.join(tree.xpath("//text()"))))
