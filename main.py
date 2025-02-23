@@ -13,7 +13,7 @@ index = dict()
 
 # 1) Loop through the JSON files and load them and get their content
 
-# 2) tokenize the content
+# 2) tokenize the content. simhash and checksum for near/exact dups.
 
 # 3) retrieve content
 
