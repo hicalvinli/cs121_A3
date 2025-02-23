@@ -57,8 +57,4 @@ def main():
         json.dump(INDEX, file)
 
     print("DUMPED")
-# 4) populate the INDEX
-    # 5a) create a var. to count number of files scraped, or loop until threshold is met. call partial
-    # INDEXer after.
-    # 5b) set counter variable back to 0 for next batch of 15k files
 
