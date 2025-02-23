@@ -4,3 +4,6 @@
 
 # IDE files
 .idea/*
+
+# The storage of the files to parse on my computer -Calvin
+rsrc/*
