@@ -24,7 +24,7 @@ def retrieve_important(tree: etree.ElementTree) -> set[str]:
 
     # For each retrieved tag, add content to content
     for tag in tags:
-        content += ' ' + ''.join(tag.itertext())
+        content += ' ' +  ' '.join(tag.itertext())
 
     # Return set of stemmed tokens
     return set(_porter_stem(_tokenize(content)))
