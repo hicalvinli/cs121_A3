@@ -2,6 +2,8 @@ import re
 import nltk
 import json
 import ijson
+import hashlib
+import tokenizer
 from lxml import etree
 
 FINAL = dict()
@@ -38,7 +40,7 @@ def partial_indexer(indexer: dict, file_count: int) -> None:
 def _write_sub_final(bucket: tuple):
     # Writes the final index of each bucket into its corresponding file.
     global FINAL
-    with open(f"{str(bucket[0])}-{str(bucket[-1])}", "w") as f:
+    with open(f"{str(bucket[0])}-{str(bucket[-1])}", "w") as f: # new file with bucket range
         json.dump(FINAL, f)
     FINAL = dict()
 
@@ -50,9 +52,9 @@ def _split_indexes(pindex: int, bucket: tuple) -> None:
         # it into main memory all at once.
         for token, sub_info in ijson.kvitems(f, ''):
             if token[0] in bucket:
-                total_info = FINAL.get(token, {})
-                total_info.update(sub_info)
-                FINAL[token] = total_info
+                total_info = FINAL.get(token, {}) # check if token already exists in the final index
+                total_info.update(sub_info) # add additional document info to the token
+                FINAL[token] = total_info # update the final index with the additional information
 
 def merge_indexes(file_num: int) -> None:
     # Merges all partial indexes alphabetically, writing each partial into a split range index
@@ -66,3 +68,61 @@ def merge_indexes(file_num: int) -> None:
             _split_indexes(pindex, bucket)
         FINAL = _alpha_sort(FINAL)
         _write_sub_final(bucket)
+
+def checksum(content: str) -> bool:
+    # Calculate checksum for a string and return. Utilizing hashlib MD5 for medium strength
+    # and speed hashing. Checks existence of hash within dictionary. Returns True if duplicate,
+    # else False.
+    global HASHES
+    md5_hash = hashlib.md5(content.encode()).hexdigest()
+    result = HASHES.get(md5_hash, False)
+    HASHES[md5_hash] = True
+    return result
+
+
+def simhash(content: str) -> bool:
+    # Calculate simhash and return TRUE if is a near duplicate and FALSE if a new document that isn't
+    # 1) Tokenize the input document into "features" which are words in our case, and assign weight using word frequency
+    tokenlist = tokenizer.tokenize(content)
+    wordfreq = dict()
+    tokenizer.computeWordFrequencies(tokenlist, wordfreq)
+
+    # 2) Hash each feature using MD5 (128 bit)  For each feature, convert its hash to a binary number,
+    hash_dict = dict()
+    for word in wordfreq.keys():
+        md5_hash = hashlib.md5(word.encode()).digest()
+        # .join needs a iterable, thats why for loop is inside, '08b' means turn each raw byte in 8 bit string
+        md5_binary_str = ''.join(format(byte, '08b') for byte in md5_hash)
+        hash_dict[md5_binary_str] = wordfreq[word]
+
+    # 3) Create a vector of 0s that are the same length as the hash length
+    # digest makes 16 bytes 8 bits each
+    sum_vec = [0] * 128
+
+    # 4) for each bit in each features binary str, if a bit is 1, add the weight to the corresponding slot
+    # in the vector, if it is 0, then subtract the features weight from that slot
+    for word in hash_dict:
+        for i in range(0,128):
+            if word[i] == '1':
+                sum_vec[i] += hash_dict[word]
+            else:
+                sum_vec[i] -= hash_dict[word]
+
+    # 5) After going through each feature, if a slot's sum is positive, it becomes 1, if negative, 0
+    binary_string = ""
+    for i in sum_vec:
+        if i > 0:
+            binary_string += "1"
+        else:
+            binary_string += "0"
+    simhash_value = int(binary_string, 2)
+
+    global SIMHASHES
+    # 6) Compare documents using fraction of bits that are similar
+    for sim in SIMHASHES:
+        different_bits = bin(simhash_value ^ sim).count("1") # XOR operation to see which bits are different
+        same_bits = 128 - different_bits
+        if (same_bits/128) > .9:
+            return True
+    SIMHASHES[simhash_value] = True
+    return False
