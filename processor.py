@@ -10,7 +10,7 @@ def _tokenize(text: str) -> list[str]:
 def _porter_stem(tokens: list[str]) -> list[str]:
     # Initialize porter stemmer
     stemmer = nltk.PorterStemmer()
-    return [stemmer.stem(token) for token in tokens]
+    return [stemmer.stem(token.lower()) for token in tokens]
 
 def retrieve_important(tree: etree.ElementTree) -> set[str]:
     # Retrieve the unique tokens from the bold, header, and title tags
@@ -28,6 +28,7 @@ def alpha_sort(indexer: dict) -> dict:
 
 def partial_indexer(indexer: dict, file_count: int) -> None:
     # Write index to partial index file after 15k page threshold is met
+    indexer = alpha_sort(indexer)
     with open(f"indexed_{file_count}", "w") as f:
         json.dump(indexer, f)
 
