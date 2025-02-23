@@ -11,7 +11,8 @@ Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
 
 index = dict()
 
-# 1) Loop through all the JSON files and load them and get their content
+# 1) Loop through the JSON files and load them and get their content
+
 
 # 2) tokenize the content
 
@@ -20,3 +21,6 @@ index = dict()
 # 4) retrieve important
 
 # 5) populate the index
+    # 5a) create a var. to count number of files scraped, or loop until threshold is met. call partial
+    # indexer after.
+
