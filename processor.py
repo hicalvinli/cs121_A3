@@ -35,7 +35,7 @@ def partial_indexer(indexer: dict, file_count: int) -> None:
     with open(f"indexed_{file_count}", "w") as f:
         json.dump(indexer, f)
 
-def write_sub_final(bucket: list):
+def _write_sub_final(bucket: list):
     global FINAL
     with open(f"index_{str(bucket[0])}-{str(bucket[-1])}", "w") as f:
         json.dump(FINAL, f)
@@ -71,3 +71,4 @@ def merge_indexes(file_num: int) -> None:
         for pindex in range(1, file_num + 1):
             _split_indexes(file_num, bucket)
             FINAL = _alpha_sort(FINAL)
+            _write_sub_final(bucket)
