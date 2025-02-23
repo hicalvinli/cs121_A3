@@ -4,6 +4,9 @@ from collections import namedtuple
 # dictionary: key: token -> value: dictionary of documents where key: documentname -> value: namedtuple
 # named tuple will contain (wordfrequency, importance)
 
+THRESHOLD = 15000 # for every 15k pages, partially index into disk memory (new file, indexed_{num})
+FILE_COUNT = 0 # count for number of partial indexes
+
 Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
 
 index = dict()

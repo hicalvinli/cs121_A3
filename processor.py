@@ -1,5 +1,6 @@
 import re
 import nltk
+import json
 from lxml import etree
 
 def _tokenize(text: str) -> list[str]:
@@ -18,3 +19,8 @@ def retrieve_important(tree: etree.ElementTree) -> set[str]:
 def retrieve_content(tree: etree.ElementTree) -> list[str]:
     # Get all text content
     return _porter_stem(_tokenize(''.join(tree.xpath("//text()"))))
+
+def partial_indexer(indexer, file_count) -> None:
+    # Write index to partial index file after 15k page threshold is met
+    with open(f"indexed_{file_count}", "w") as f:
+        json.dump(indexer, f)
