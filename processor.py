@@ -10,20 +10,33 @@ FINAL = dict()
 
 def _tokenize(text: str) -> list[str]:
     # Match alphanumeric sequences as tokens
-    return re.findall(r"[a-zA-Z\d]+", text)
+    return re.findall(r"[a-zA-Z\d]+", text.lower())
 
 def _porter_stem(tokens: list[str]) -> list[str]:
     # Initialize porter stemmer
     stemmer = nltk.PorterStemmer()
-    return [stemmer.stem(token.lower()) for token in tokens]
+    return [stemmer.stem(token) for token in tokens]
 
 def retrieve_important(tree: etree.ElementTree) -> set[str]:
     # Retrieve the unique tokens from the bold, header, and title tags
-    return set(_porter_stem(_tokenize(''.join(tree.xpath("//b|//title|//h")))))
+    tags = tree.xpath("//b|//title|//h")
+    content = ""
+
+    # For each retrieved tag, add content to content
+    for tag in tags:
+        content += ' ' + ''.join(tag.itertext())
+
+    # Return set of stemmed tokens
+    return set(_porter_stem(_tokenize(content)))
 
 def retrieve_content(tree: etree.ElementTree) -> list[str]:
+    # Remove all JS and css script/style tags
+    to_drop = tree.xpath('//style|//script')
+    for tag in to_drop:
+        tag.getparent().remove(tag)
+
     # Get all text content
-    return _porter_stem(_tokenize(''.join(tree.xpath("//text()"))))
+    return _porter_stem(_tokenize(' '.join(tree.xpath("//text()"))))
 
 def _alpha_sort(indexer: dict) -> dict:
     # Sort inv. index alphabetically by token (key) in ascending order

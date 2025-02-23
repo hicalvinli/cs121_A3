@@ -1,3 +1,8 @@
+# Python files
+**/__pycache__/
+__pycache__/
+__pycache__/*
+*.py[cod]
 
 # Mac files
 .DS_Store
@@ -8,5 +13,5 @@
 # The storage of the files to parse on my computer -Calvin
 rsrc/*
 
-# Disk copy of index
-index.txt
+# Index file on disk
+data.json
