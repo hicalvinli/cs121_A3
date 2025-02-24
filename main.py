@@ -2,7 +2,7 @@ import json
 from collections import namedtuple
 import os
 import time
-
+import processor
 from lxml import etree
 
 from processor import retrieve_important, retrieve_content
@@ -11,8 +11,9 @@ from processor import retrieve_important, retrieve_content
 # dictionary: key: token -> value: dictionary of documents where key: documentname -> value: namedtuple
 # named tuple will contain (wordfrequency, importance)
 
-THRESHOLD = 15000 # for every 15k pages, partially INDEX into disk memory (new file, INDEXed_{num})
-FILE_COUNT = 1 # count for number of partial INDEXes
+THRESHOLD = 15000 # for every 15k pages, partially index into disk memory (new file, indexed_{num})
+FILE_COUNT = 0 # checking if threshold matches number f files
+PFILE_COUNT = 0 # count for number of partial indexes
 INDEX = dict()
 Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
 
@@ -36,12 +37,14 @@ def updateIndex(word, url):
 # 1) Loop through the JSON files and load them and get their content
 # 1.5) need to check sum and simhash
 def main():
-    file_count = 0
+    global THRESHOLD
+    global FILE_COUNT
+    global PFILE_COUNT
     relative = "rsrc/DEV-2"
 
     # Iterate through every folder
     for folder in os.listdir(relative):
-        print(file_count)
+        print(FILE_COUNT)
 
         # Iterate through every file in the folder
         folder = os.path.join(os.path.abspath(relative), folder)
@@ -56,7 +59,7 @@ def main():
                 continue
 
             # Increment file count
-            file_count += 1
+            FILE_COUNT += 1
 
             # Open file and load json
             file = os.path.join(folder, file)
@@ -84,11 +87,17 @@ def main():
             except Exception as e:
                 print(f"failed: {e} at line:", e.__traceback__.tb_lineno)
 
-            # 5a) Loop until threshold is met with file_count. call partial INDEXer after.
-            # 5b) set counter variable back to 0 for next batch of 15k files
+            # 5a) Loop until threshold is met with file_count. call partial indexer after.
+            if THRESHOLD <= FILE_COUNT:
+                PFILE_COUNT += 1
+                processor.partial_indexer(INDEX, PFILE_COUNT)
+                # 5b) set counter variable back to 0 for next batch of 15k files
+                FILE_COUNT = 0
+                print(f"partial index {PFILE_COUNT} dumped")
 
-    with open("data.json", "w") as file:
-        json.dump(INDEX, file)
+    processor.merge_indexes(PFILE_COUNT)
+    # with open("data.json", "w") as file:
+    #     json.dump(INDEX, file)
 
     print("DUMPED")
 

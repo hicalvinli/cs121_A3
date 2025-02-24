@@ -44,10 +44,10 @@ def _alpha_sort(indexer: dict) -> dict:
     index_sorted = dict(sorted(pairs, key=lambda token: token[0])) # O(NlogN) for sorted() function
     return index_sorted
 
-def partial_indexer(indexer: dict, file_count: int) -> None:
+def partial_indexer(indexer: dict, pfile_count: int) -> None:
     # Write index to partial index file after 15k page threshold is met
     indexer = _alpha_sort(indexer)
-    with open(f"indexed_{file_count}", "w") as f:
+    with open(f"indexed_{pfile_count}", "w") as f:
         json.dump(indexer, f)
 
 def _write_sub_final(bucket: tuple):
