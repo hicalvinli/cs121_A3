@@ -72,6 +72,9 @@ def main():
                 # Parse the html, enforcing coding to align with fromstring() requirements
                 tree = etree.fromstring(bytes(jsondata['content'], encoding='utf-8'), etree.HTMLParser())
 
+                if tree is None:
+                    continue
+
                 # 2 & 3) Tokenize important content and all content
                 regular_list = retrieve_content(tree)
                 important_set = retrieve_important(tree)
