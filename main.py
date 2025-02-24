@@ -18,6 +18,7 @@ INDEX = dict()
 Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
 
 def updateIndex(word, url):
+    global INDEX
     # if the word doesn't exist add it and give it a dictionary add the document
     if INDEX.get(word) is None:
         INDEX[word] = dict()
@@ -40,6 +41,7 @@ def main():
     global THRESHOLD
     global FILE_COUNT
     global PFILE_COUNT
+    global INDEX
     relative = "rsrc/DEV-2"
 
     # Iterate through every folder
@@ -93,7 +95,9 @@ def main():
                 processor.partial_indexer(INDEX, PFILE_COUNT)
                 # 5b) set counter variable back to 0 for next batch of 15k files
                 FILE_COUNT = 0
+                INDEX = dict()
                 print(f"partial index {PFILE_COUNT} dumped")
+
 
     processor.merge_indexes(PFILE_COUNT)
     # with open("data.json", "w") as file:
