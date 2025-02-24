@@ -13,5 +13,6 @@ __pycache__/*
 # The storage of the files to parse on my computer -Calvin
 rsrc/*
 
-# Index file on disk
-data.json
+# Storage of json
+*.json
+*.txt
