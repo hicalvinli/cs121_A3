@@ -47,20 +47,20 @@ def _alpha_sort(indexer: dict) -> dict:
 def partial_indexer(indexer: dict, pfile_count: int) -> None:
     # Write index to partial index file after 15k page threshold is met
     indexer = _alpha_sort(indexer)
-    with open(f"indexed_{pfile_count}", "w") as f:
+    with open(f"indexed_{pfile_count}.json", "w") as f:
         json.dump(indexer, f)
 
 def _write_sub_final(bucket: tuple):
     # Writes the final index of each bucket into its corresponding file.
     global FINAL
-    with open(f"{str(bucket[0])}-{str(bucket[-1])}", "w") as f: # new file with bucket range
+    with open(f"{str(bucket[0])}-{str(bucket[-1])}.txt", "w") as f: # new file with bucket range
         json.dump(FINAL, f)
     FINAL = dict()
 
 def _split_indexes(pindex: int, bucket: tuple) -> None:
     # Splits indexes based on range.
     global FINAL
-    with open(f"indexed_{pindex}", 'r') as f:
+    with open(f"indexed_{pindex}.json", 'r') as f:
         # ijson turns partial index into an iterator, avoiding reading
         # it into main memory all at once.
         for token, sub_info in ijson.kvitems(f, ''):
