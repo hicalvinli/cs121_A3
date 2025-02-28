@@ -1,7 +1,7 @@
 import json
 import math
-import re
-import nltk
+import processor
+import time
 
 def load_index_and_metadata():
     #Load the inverted index
@@ -23,11 +23,8 @@ def load_index_and_metadata():
 
 #Basically the same thing we did before lmao
 def tokenize_and_stem(query):
-    #Tokenize the query
-    tokens = re.findall(r"[a-zA-Z\d]+", query.lower())
-    #Initalize stemmer
-    stemmer = nltk.PorterStemmer()
-    return [stemmer.stem(token) for token in tokens]
+    #Tokenize and stem
+    return processor._porter_stem(processor._tokenize(query))
 
 #Search function
 def search(query, index, total_docs, importance_boost=0.5):
@@ -93,11 +90,15 @@ def main():
         if query == '0':
             break
 
+        start = time.time()
         results = search(query, index, total_docs)
+        end = time.time()
         print(f"\nTop results for '{query}':")
         #Print the top 5 URLs
         for i, (url, score) in enumerate(results[:5]):
             print(f"{i + 1}. {url} (Score: {score:.2f})")
+
+        print(f"\nTime elapsed: {1000 * (end - start)} ms.")
 
 if __name__ == "__main__":
     main()

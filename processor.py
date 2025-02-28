@@ -53,9 +53,18 @@ def partial_indexer(indexer: dict, pfile_count: int) -> None:
 def _write_sub_final(bucket: tuple):
     # Writes the final index of each bucket into its corresponding file.
     global FINAL
-    with open(f"{str(bucket[0])}-{str(bucket[-1])}.txt", "w") as f: # new file with bucket range
+    with open(f"{str(bucket[0])}-{str(bucket[-1])}.json", "w") as f: # new file with bucket range
         json.dump(FINAL, f)
     FINAL = dict()
+
+def write_full():
+    all_ind = ["0-9.json", "a-g.json", "h-o.json", "p-z.json"]
+    comb = {}
+    for pind in all_ind:
+        with open(pind, "r") as f:
+            comb.update(json.load(f))
+    with open("data.json", "w") as f:
+        json.dump(comb, f)
 
 def _split_indexes(pindex: int, bucket: tuple) -> None:
     # Splits indexes based on range.

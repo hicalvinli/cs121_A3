@@ -113,6 +113,8 @@ def main():
 
     # merge
     processor.merge_indexes(PFILE_COUNT)
+    print("alpha index dumped")
+    processor.write_full()
     # with open("data.json", "w") as file:
     #     json.dump(INDEX, file)
 
