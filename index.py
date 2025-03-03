@@ -114,11 +114,11 @@ def main():
     # merge
     processor.merge_indexes(PFILE_COUNT)
     print("alpha index dumped")
-    processor.write_full()
-    # with open("data.json", "w") as file:
-    #     json.dump(INDEX, file)
-
-    print("DUMPED")
+    # processor.write_full()
+    # # with open("data.json", "w") as file:
+    # #     json.dump(INDEX, file)
+    #
+    # print("DUMPED")
 
 if __name__ == "__main__":
     start = time.time()

@@ -3,9 +3,25 @@ import math
 import processor
 import time
 
-def load_index_and_metadata():
-    #Load the inverted index
-    with open("data.json", "r") as f:
+
+SPLITS = [('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
+                 ('a', 'b', 'c', 'd', 'e', 'f', 'g'),
+                 ('h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'),
+                 ('p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')]
+
+def load_index_and_metadata(term):
+    global SPLITS
+    #Load the inverted index based on its alphanumeric file split
+    if term[0] in SPLITS[0]:
+        file_name = '0-9.json'
+    elif term[0] in SPLITS[1]:
+        file_name = 'a-g.json'
+    elif term[0] in SPLITS[2]:
+        file_name = 'h-o.json'
+    else:
+        file_name = 'p-z.json'
+
+    with open(file_name, "r") as f:
         #Read the json data from the file
         #Convert the data into a Python dict, this is the inverted index
         index = json.load(f)
@@ -27,7 +43,9 @@ def tokenize_and_stem(query):
     return processor._porter_stem(processor._tokenize(query))
 
 #Search function
-def search(query, index, total_docs, importance_boost=0.5):
+def search(query, importance_boost=0.5):
+    index = {}
+    total_docs = 0
     #Process the query
     terms = tokenize_and_stem(query)
     #Check if the query is empty
@@ -38,6 +56,9 @@ def search(query, index, total_docs, importance_boost=0.5):
     #Iterate over each stemmed term
     for term in terms:
         #Check if the term is present in the inverted index
+        index, total_docs = load_index_and_metadata(term)
+
+        print(f"Index loaded with {total_docs} documents.")
         if term not in index:
             #Return empty if any term is not found in the index
             #There are no documents containing all the terms
@@ -82,8 +103,7 @@ def search(query, index, total_docs, importance_boost=0.5):
     return sorted(scores, key=lambda x: -x[1])
 
 def main():
-    index, total_docs = load_index_and_metadata()
-    print(f"Index loaded with {total_docs} documents.")
+    # index, total_docs = load_index_and_metadata()
 
     while True:
         query = input("\nEnter search query (enter '0' to quit): ").strip()
@@ -91,7 +111,7 @@ def main():
             break
 
         start = time.time()
-        results = search(query, index, total_docs)
+        results = search(query)
         end = time.time()
         print(f"\nTop results for '{query}':")
         #Print the top 5 URLs
