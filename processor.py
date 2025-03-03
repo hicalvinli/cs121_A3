@@ -18,8 +18,8 @@ def _porter_stem(tokens: list[str]) -> list[str]:
     return [stemmer.stem(token) for token in tokens]
 
 def retrieve_important(tree: etree.ElementTree) -> set[str]:
-    # Retrieve the unique tokens from the bold, header, and title tags
-    tags = tree.xpath("//b|//title|//h")
+    # Retrieve the unique tokens from the bold, header, strong, and title tags
+    tags = tree.xpath("//b|//title|//h|//strong")
     content = ""
 
     # For each retrieved tag, add content to content
