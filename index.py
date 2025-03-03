@@ -15,6 +15,7 @@ THRESHOLD = 15000 # for every 15k pages, partially index into disk memory (new f
 FILE_COUNT = 0 # checking if threshold matches number f files
 PFILE_COUNT = 0 # count for number of partial indexes
 INDEX = dict()
+DOC_COUNTS = dict()
 Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
 
 def updateIndex(word, url):
@@ -41,6 +42,7 @@ def main():
     global THRESHOLD
     global FILE_COUNT
     global PFILE_COUNT
+    global DOC_COUNTS
     global INDEX
     relative = "rsrc/DEV-2"
     # I use windows so i cant use rsrc :(
@@ -83,6 +85,10 @@ def main():
 
                 # 4) populate the INDEX
                 url = jsondata['url']
+
+                # Save the total term count
+                DOC_COUNTS[url] = len(regular_list)
+
                 # For every word update the index with it
                 for word in regular_list:
                     updateIndex(word, url)
@@ -119,6 +125,11 @@ def main():
     # #     json.dump(INDEX, file)
     #
     # print("DUMPED")
+
+    # Write document term count file
+    with open("doc_term_counts.json", "w") as f:
+        json.dump(DOC_COUNTS, f)
+    print("Dumped document term counts.")
 
 if __name__ == "__main__":
     start = time.time()
