@@ -1,27 +1,17 @@
 import streamlit as st
-from search import load_index_and_metadata, search
+from search import search
 import time
 
-#Load search index and metadata
-@st.cache_resource
-def load_data():
-    return load_index_and_metadata()
-index, total_docs = load_data()
-
 st.markdown(
-
     """
     <style>
 
     @keyframes gradientAnimation {
         0% {
-            background-position: 0% 50%;
-        }
-        50% {
             background-position: 100% 50%;
         }
         100% {
-        background-position: 0% 50%;
+            background-position: -33% 50%;
         }
     }
     
@@ -36,8 +26,6 @@ st.markdown(
         font-size: 80px;
         font-weight: bold;
         background: linear-gradient(to left, #ff9f9c, #058bf2);
-        background-size: 600% 600%;
-        animation: gradientAnimation 16s ease infinite;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         text-align: center;
@@ -83,7 +71,7 @@ with st.container():
 #Handle Search
 if submitted and query:
     start_time = time.time()
-    results = search(query, index, total_docs)
+    results = search(query)
     execution_time = round((time.time() - start_time) * 1000, 2)
 
     #Display Results and Time
