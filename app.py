@@ -1,7 +1,9 @@
 import streamlit as st
-from search import search
+from search import load_index_and_metadata, load_doc_counts, search
 import time
 
+index, total_docs = load_index_and_metadata()
+doc_counts = load_doc_counts()
 st.markdown(
     """
     <style>
@@ -71,7 +73,7 @@ with st.container():
 #Handle Search
 if submitted and query:
     start_time = time.time()
-    results = search(query)
+    results = search(query, index, total_docs, doc_counts)
     execution_time = round((time.time() - start_time) * 1000, 2)
 
     #Display Results and Time

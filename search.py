@@ -63,12 +63,12 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.5):
         return []
 
     # Count number of stopwords
-    stopwords = 0
-    for word in terms:
-        if word in STOPS:
-            stopwords += 1
+    #stopwords = 0
+    #for word in terms:
+    #    if word in STOPS:
+    #        stopwords += 1
 
-    stopwords = float(stopwords) / len(terms)
+    #stopwords = float(stopwords) / len(terms)
 
     #if stopwords < stop_threshold:
     #    terms = [term for term in terms if term.lower() not in STOPS]
