@@ -52,7 +52,7 @@ def tokenize_and_stem(query):
     return processor._porter_stem(processor._tokenize(query))
 
 #Search function
-def search(query, index, total_docs, doc_counts, importance_boost=0.5):
+def search(query, index, total_docs, doc_counts, importance_boost=0.65):
 
     stop_threshold = 0.5
 
@@ -115,7 +115,7 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.5):
             #Calculate inverse document frequency
             #IDF = log(total number of documents in corpus D/number of documents containing term t)
             idf = math.log(total_docs / df) if df else 0 #return 0 if document frequency is 0
-            term_score = tf * idf * (1 - importance_boost * importance)
+            term_score = tf * idf * (1 + importance_boost * importance)
             #Add the term's score to the document score
             score += term_score
         #Append scores
