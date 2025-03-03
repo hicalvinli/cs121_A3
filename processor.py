@@ -113,7 +113,7 @@ def simhash(content: str) -> bool:
     hash_dict = dict()
     for word in wordfreq.keys():
         md5_hash = hashlib.md5(word.encode()).digest()
-        # .join needs a iterable, thats why for loop is inside, '08b' means turn each raw byte in 8 bit string
+        # .join needs a iterable, that's why for loop is inside, '08b' means turn each raw byte in 8 bit string
         md5_binary_str = ''.join(format(byte, '08b') for byte in md5_hash)
         hash_dict[md5_binary_str] = wordfreq[word]
 
