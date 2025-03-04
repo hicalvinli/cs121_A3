@@ -107,7 +107,7 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65):
             #Retrieve term frequency (tf) and associate importance value for the termin in the document from the index
             tf, importance = index[term][doc]
 
-            # Normalize term frequency by relative term frequency to reduce impact of execessively long files
+            # Normalize term frequency by relative term frequency to reduce impact of excessively long files
             tf = float(tf) / doc_counts[doc] * 100
 
             #Compute document frequency (df)
@@ -116,6 +116,8 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65):
             #IDF = log(total number of documents in corpus D/number of documents containing term t)
             idf = math.log(total_docs / df) if df else 0 #return 0 if document frequency is 0
             term_score = tf * idf * (1 + importance_boost * importance)
+            if doc_counts[doc] > 10000 or doc_counts[doc] < 200:
+                term_score *= 0.60
             #Add the term's score to the document score
             score += term_score
         #Append scores
