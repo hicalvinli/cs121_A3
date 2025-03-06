@@ -7,6 +7,7 @@ import tokenizer
 from lxml import etree
 
 FINAL = dict()
+SECONDARY_INDEX = dict()
 
 def _tokenize(text: str) -> list[str]:
     # Match alphanumeric sequences as tokens
@@ -63,8 +64,35 @@ def write_full():
     for pind in all_ind:
         with open(pind, "r") as f:
             comb.update(json.load(f))
+    # when you get the big data file, calculate the byte offset and place them into the secondary index
+    # term with start witzh " and end with ", then keep adding until you see } <- this will indicate end of
+    # documents for that term, then count until next ", and repeat :D
+    # instead of dumping i will manually write to the dict on my own so i can count the bytes while writing
     with open("data.json", "w") as f:
-        json.dump(comb, f)
+        byte_count = 1
+        f.write("{")
+        comblen = len(comb)
+        i = 0
+        for key, value in comb.items():
+            # this will assign byte_count for the term, then write the key value in json format
+            SECONDARY_INDEX[key] = byte_count
+            if i < comblen - 1:
+                pair_str = '"' + str(key) + '"' + ": " + str(value) + ", "
+            else:
+                pair_str = '"' + str(key) + '"' + ": " + str(value)
+            # last key is special
+            f.write(pair_str)
+            byte_count += len(pair_str)
+            # add 2 bc 1 comma, and 1 space, and {}
+            i += 1
+        f.write("}")
+
+    with open("secondary_index.json", "w") as f:
+        json.dump(SECONDARY_INDEX, f)
+
+    print(SECONDARY_INDEX)
+    # with open("data.json", "w") as f:
+        # json.dump(comb, f)
 
 def _split_indexes(pindex: int, bucket: tuple) -> None:
     # Splits indexes based on range.

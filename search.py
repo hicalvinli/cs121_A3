@@ -1,8 +1,11 @@
 import json
 import math
+import re
+
 import processor
 import time
 
+SECONDARY_INDEX = dict()
 STOPS = ['a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any',
              'are', "aren't", 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below',
              'between', 'both', 'but', 'by', "can't", 'cannot', 'could', "couldn't", 'did',
@@ -46,10 +49,33 @@ def load_index_and_metadata():
     #Return the inverted index and total number of unique documents
     return index, total_docs
 
+def load_secondary_index():
+    with open("secondary_index.json", "r") as f:
+        return json.load(f)
+
+
 #Basically the same thing we did before lmao
 def tokenize_and_stem(query):
     #Tokenize and stem
     return processor._porter_stem(processor._tokenize(query))
+
+def get_doc_sets(secondary_index, terms):
+    #return a list of all the keys of that term
+    # [set(index[term].keys()) for term in terms]
+    doc_sets = []
+    for term in terms:
+        setstr = ""
+        with open("data.json", "r") as f:
+            f.seek(secondary_index[term])
+            char = ''
+            while char != '}':
+                char = f.read(1)
+                setstr += char
+        print(setstr)
+        doc_sets.append(set(re.findall(r"'(.*?)'", setstr)))
+
+    return doc_sets
+
 
 #Search function
 def search(query, index, total_docs, doc_counts, importance_boost=0.65):
@@ -83,7 +109,9 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65):
             return []
 
     #Get document lists for each term
-    doc_sets = [set(index[term].keys()) for term in terms]
+
+    doc_sets = get_doc_sets(index, terms)
+    # anver code: doc_sets = [set(index[term].keys()) for term in terms]
 
     #Get intersection
     #Initalize common_docs with the set of documents for the first term
@@ -127,9 +155,12 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65):
     return sorted(scores, key=lambda x: -x[1])
 
 def main():
+    # anver code
     doc_counts = load_doc_counts()
-    index, total_docs = load_index_and_metadata()
-    print(f"Index loaded with {total_docs} documents.")
+    # anver code: index, total_docs = load_index_and_metadata()
+    secondary_index = load_secondary_index()
+
+    # anver code print(f"Index loaded with {total_docs} documents.")
 
     while True:
         query = input("\nEnter search query (enter '0' to quit): ").strip()
@@ -137,7 +168,8 @@ def main():
             break
 
         start = time.time()
-        results = search(query, index, total_docs, doc_counts)
+        # anver code: results = search(query, index, total_docs, doc_counts)
+        results = search(query, secondary_index, 550000, doc_counts)
         end = time.time()
         print(f"\nTop results for '{query}':")
         #Print the top 5 URLs
