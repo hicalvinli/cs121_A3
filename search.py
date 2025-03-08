@@ -31,27 +31,27 @@ def load_doc_counts():
 
     return index
 
-def load_index_and_metadata():
-    # Load the inverted index
-    with open("data.json", "r") as f:
-
-        # Read the json data from the file
-        # Convert the data into a Python dict, this is the inverted index
-        index = json.load(f)
-
-    all_urls = set()
-
-    # Iterate over each term in the index
-    for term in index:
-
-        # Add the keys to the set for each term
-        all_urls.update(index[term].keys())
-
-    # Count the number of unique documents
-    total_docs = len(all_urls)
-
-    # Return the inverted index and total number of unique documents
-    return index, total_docs
+# def load_index_and_metadata():
+#     # Load the inverted index
+#     with open("data.json", "r") as f:
+#
+#         # Read the json data from the file
+#         # Convert the data into a Python dict, this is the inverted index
+#         index = json.load(f)
+#
+#     all_urls = set()
+#
+#     # Iterate over each term in the index
+#     for term in index:
+#
+#         # Add the keys to the set for each term
+#         all_urls.update(index[term].keys())
+#
+#     # Count the number of unique documents
+#     total_docs = len(all_urls)
+#
+#     # Return the inverted index and total number of unique documents
+#     return index, total_docs
 
 def load_secondary_index():
     with open("secondary_index.json", "r") as f:
@@ -61,35 +61,52 @@ def tokenize_and_stem(query):
     # Tokenize and stem
     return processor._porter_stem(processor._tokenize(query))
 
-def get_doc_sets(secondary_index, terms):
-    # Return a list of all the keys of that term
-    doc_sets = []
+def get_matching_docs(main_indexfd, secondary_index, terms):
+
+    # Return a dict of all the docs that contain all terms
+    doc_sets = set()
+    first = True
+
     for term in terms:
+        term_docs = set()
         setstr = ""
 
-        # Open file
-        with open("data.json", "r") as f:
-            # Seek to correct spot
-            f.seek(secondary_index[term])
-            char = ''
+        # Seek to correct spot
+        main_indexfd.seek(secondary_index[term], 0)
+        char = main_indexfd.read(1)
 
-            # Keep reading chars until end of term document list
-            while char != '}':
-                char = f.read(1)
-                setstr += char
+        # Skip past key and the initial curly brace
+        while char != '{':
+            char = main_indexfd.read(1)
 
-        # Add documents that contain the requested term to the set
-        print(setstr)
-        doc_sets.append(set(re.findall(r"'(.*?)'", setstr)))
+        # Skip curly brace
+        char = main_indexfd.read(1)
+
+        # Keep reading chars until end of term document list
+        while char != '}':
+            setstr += char
+            char = main_indexfd.read(1)
+
+        # Add to dictionary
+        for doc in re.findall(r"'(.*?)'", setstr):
+            term_docs.add(doc)
+
+        # If the first one, initialize doc_sets, otherwise intersection
+        if first:
+            doc_sets = term_docs
+            first = False
+        else:
+            doc_sets = doc_sets.intersection(term_docs)
 
     return doc_sets
 
 
 # Search function
-def search(query, index, total_docs, doc_counts, importance_boost=0.65, stop_threshold=0.34):
+def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importance_boost=0.65, stop_threshold=0.34):
 
     # Process the query
     terms = tokenize_and_stem(query)
+
     # Check if the query is empty
     if not terms:
         return []
@@ -109,36 +126,32 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65, stop_thr
     # Check if terms exist in the index
     # Iterate over each stemmed term
     for term in terms:
-        # Check if the term is present in the inverted index
-        if term not in index:
-            # Return empty if any term is not found in the index
+
+        # Check if the term is present in the bookkeeping index
+        if term not in secondary_index:
+
+            # Return empty if any term is not found in the bookkeeping index
             # There are no documents containing all the terms
             return []
 
     # Get document lists for each term
+    docs = get_matching_docs(main_indexfd, secondary_index, terms)
 
-    doc_sets = get_doc_sets(index, terms)
-    # anver code: doc_sets = [set(index[term].keys()) for term in terms]
-
-    # Get intersection
-    # Initialize common_docs with the set of documents for the first term
-    common_docs = doc_sets[0]
-    # Iterate over remaining sets
-    for doc_set in doc_sets[1:]:
-        # Update common_docs with the intersection of each subsequent set
-        common_docs.intersection_update(doc_set)
-        # Check if the intersection is empty
-        if not common_docs:
-            # Return empty if non common documents exist
-            return []
+    # If there were no documents found that had all terms, exit
+    if len(docs) == 0:
+        return []
 
     # Calculate importance scores for each document
     scores = []
+
     # Loop through each document that contains all query terms
-    for doc in common_docs:
+    for doc in docs:
+
         score = 0.0
+
         # Iterate over each term in the query
         for term in terms:
+
             # Retrieve term frequency (tf) and associate importance value for the termin in the document from the index
             tf, importance = index[term][doc]
 
@@ -153,7 +166,7 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65, stop_thr
             term_score = tf * idf * (1 + importance_boost * importance)
 
             # Penalize excessively long or short files
-            if doc_counts[doc] > 10000 or doc_counts[doc] < 200:
+            if doc_freqs[doc] > 10000 or doc_freqs[doc] < 200:
                 term_score *= 0.60
 
             # Add the term's score to the document score
@@ -166,28 +179,43 @@ def search(query, index, total_docs, doc_counts, importance_boost=0.65, stop_thr
     return sorted(scores, key=lambda x: -x[1])
 
 def main():
-    # anver code
-    doc_counts = load_doc_counts()
-    # anver code: index, total_docs = load_index_and_metadata()
+
+    # Load the document counts
+    doc_freqs = load_doc_counts()
+    num_docs = len(doc_freqs)
+
+    # Load the bookkeeping index
     secondary_index = load_secondary_index()
 
-    # anver code print(f"Index loaded with {total_docs} documents.")
+    # Total usage: approx. 30 MB of main memory
+    with open("data.json", "r") as main_indexfd:
+        while True:
+            # Ask for input
+            query = input("\nEnter search query (enter '0' to quit): ").strip()
+            if query == '0':
+                break
 
-    while True:
-        query = input("\nEnter search query (enter '0' to quit): ").strip()
-        if query == '0':
-            break
+            # Begin time
+            start = time.time()
 
-        start = time.time()
-        # anver code: results = search(query, index, total_docs, doc_counts)
-        results = search(query, secondary_index, 550000, doc_counts)
-        end = time.time()
-        print(f"\nTop results for '{query}':")
-        # Print the top 5 URLs
-        for i, (url, score) in enumerate(results[:5]):
-            print(f"{i + 1}. {url} (Score: {score:.2f})")
+            # Retrieve search results
+            results = search(query, main_indexfd, secondary_index, num_docs, doc_freqs)
 
-        print(f"\nTime elapsed: {1000 * (end - start)} ms.")
+            # End time
+            end = time.time()
+
+            # Print the top 5 URLs
+            print(f"\nTop results for '{query}':")
+
+            # Special case if no results found
+            if len(results) == 0:
+                print("No results found.")
+            else:
+                for i, (url, score) in enumerate(results[:5]):
+                    print(f"{i + 1}. {url} (Score: {score:.2f})")
+
+            # Print time elapsed
+            print(f"\nTime elapsed: {1000 * (end - start)} ms.")
 
 if __name__ == "__main__":
     main()
