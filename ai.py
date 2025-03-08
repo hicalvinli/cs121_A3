@@ -10,8 +10,14 @@ class Summarizer():
         self.site_content = raw_content
 
     def query(self): # sends query in form of raw text content
-        pass
+        client = genai.Client(api_key = GEMINI_API_KEY)
+
+        response = client.models.generate_content(
+            model = "gemini-2.0-flash",
+            contents = f"Do not use text styling. Summarize this website in 2 sentences: {self.site_content}",
+        )
+        return response
 
     def summarize(self, resp): # outputs/returns model's response
-        pass
+        print(resp.text)
 
