@@ -2,3 +2,5 @@ ijson
 lxml
 nltk
 streamlit
+google-genai
+python-dotenv
