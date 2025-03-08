@@ -100,6 +100,35 @@ def get_matching_docs(main_indexfd, secondary_index, terms):
 
     return doc_sets
 
+def get_term_postings(main_indexfd, secondary_index, term):
+
+    term_postings = {}
+    postings = ""
+
+    # Seek to correct spot
+    main_indexfd.seek(secondary_index[term], 0)
+    char = main_indexfd.read(1)
+
+    # Skip past key and the initial curly brace
+    while char != '{':
+        char = main_indexfd.read(1)
+
+    # Skip curly brace
+    char = main_indexfd.read(1)
+
+    # Keep reading chars until end of term document list
+    while char != '}':
+        postings += char
+        char = main_indexfd.read(1)
+
+    # Split to get each individual entry
+    postings = postings.split(", '")
+    for posting in postings:
+        posting = re.sub(r"(\'?\[?\]?)", "", posting)
+        posting = posting.split(": ")
+        term_postings[posting[0]] = [int(i) for i in posting[1].split(", ")]
+
+    return term_postings
 
 # Search function
 def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importance_boost=0.65, stop_threshold=0.34):
@@ -143,26 +172,23 @@ def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importan
 
     # Calculate importance scores for each document
     scores = []
-
-    # Loop through each document that contains all query terms
     for doc in docs:
-
         score = 0.0
 
-        # Iterate over each term in the query
         for term in terms:
 
-            # Retrieve term frequency (tf) and associate importance value for the termin in the document from the index
-            tf, importance = index[term][doc]
+            # Retrieve term frequency (tf) and associate importance value for the term in the document from the index
+            term_index = get_term_postings(main_indexfd, secondary_index, term)
+            tf, importance = term_index[doc]
 
-            # Normalize term frequency by relative term frequency to reduce impact of excessively long files
+            # Calculate tf
             tf = 1 + math.log(float(tf))
 
-            # Compute document frequency (df)
-            df = len(index[term])
-            # Calculate inverse document frequency
-            # IDF = log(total number of documents in corpus D/number of documents containing term t)
-            idf = math.log(total_docs / df) if df else 0 #return 0 if document frequency is 0
+            # Calculate idf
+            idf = len(term_index[term])
+            idf = math.log(total_docs / idf) if idf else 0
+
+            # Calculate score
             term_score = tf * idf * (1 + importance_boost * importance)
 
             # Penalize excessively long or short files
@@ -188,7 +214,10 @@ def main():
     secondary_index = load_secondary_index()
 
     # Total usage: approx. 30 MB of main memory
+
+    # Open file descriptor for main index
     with open("data.json", "r") as main_indexfd:
+
         while True:
             # Ask for input
             query = input("\nEnter search query (enter '0' to quit): ").strip()
