@@ -32,126 +32,137 @@ def load_doc_counts():
     return index
 
 def load_index_and_metadata():
-    #Load the inverted index
+    # Load the inverted index
     with open("data.json", "r") as f:
-        #Read the json data from the file
-        #Convert the data into a Python dict, this is the inverted index
+
+        # Read the json data from the file
+        # Convert the data into a Python dict, this is the inverted index
         index = json.load(f)
 
     all_urls = set()
-    #Iterate over each term in the index
+
+    # Iterate over each term in the index
     for term in index:
-        #Add the keys to the set for each term
+
+        # Add the keys to the set for each term
         all_urls.update(index[term].keys())
-    #Count the number of unique documents
+
+    # Count the number of unique documents
     total_docs = len(all_urls)
 
-    #Return the inverted index and total number of unique documents
+    # Return the inverted index and total number of unique documents
     return index, total_docs
 
 def load_secondary_index():
     with open("secondary_index.json", "r") as f:
         return json.load(f)
 
-
-#Basically the same thing we did before lmao
 def tokenize_and_stem(query):
-    #Tokenize and stem
+    # Tokenize and stem
     return processor._porter_stem(processor._tokenize(query))
 
 def get_doc_sets(secondary_index, terms):
-    #return a list of all the keys of that term
-    # [set(index[term].keys()) for term in terms]
+    # Return a list of all the keys of that term
     doc_sets = []
     for term in terms:
         setstr = ""
+
+        # Open file
         with open("data.json", "r") as f:
+            # Seek to correct spot
             f.seek(secondary_index[term])
             char = ''
+
+            # Keep reading chars until end of term document list
             while char != '}':
                 char = f.read(1)
                 setstr += char
+
+        # Add documents that contain the requested term to the set
         print(setstr)
         doc_sets.append(set(re.findall(r"'(.*?)'", setstr)))
 
     return doc_sets
 
 
-#Search function
-def search(query, index, total_docs, doc_counts, importance_boost=0.65):
+# Search function
+def search(query, index, total_docs, doc_counts, importance_boost=0.65, stop_threshold=0.34):
 
-    stop_threshold = 0.5
-
-    #Process the query
+    # Process the query
     terms = tokenize_and_stem(query)
-    #Check if the query is empty
+    # Check if the query is empty
     if not terms:
         return []
 
     # Count number of stopwords
-    #stopwords = 0
-    #for word in terms:
-    #    if word in STOPS:
-    #        stopwords += 1
+    stopwords = 0
+    for word in terms:
+        if word in STOPS:
+            stopwords += 1
 
-    #stopwords = float(stopwords) / len(terms)
+    # If the ratio of stopwords in the query is under a certain threshold, they are not important
+    # so remove them from the query for more accurate search
+    stopwords = float(stopwords) / len(terms)
+    if stopwords < stop_threshold:
+        terms = [term for term in terms if term.lower() not in STOPS]
 
-    #if stopwords < stop_threshold:
-    #    terms = [term for term in terms if term.lower() not in STOPS]
-
-    #Check if terms exist in the index
-    #Iterate over each stemmed term
+    # Check if terms exist in the index
+    # Iterate over each stemmed term
     for term in terms:
-        #Check if the term is present in the inverted index
+        # Check if the term is present in the inverted index
         if term not in index:
-            #Return empty if any term is not found in the index
-            #There are no documents containing all the terms
+            # Return empty if any term is not found in the index
+            # There are no documents containing all the terms
             return []
 
-    #Get document lists for each term
+    # Get document lists for each term
 
     doc_sets = get_doc_sets(index, terms)
     # anver code: doc_sets = [set(index[term].keys()) for term in terms]
 
-    #Get intersection
-    #Initalize common_docs with the set of documents for the first term
+    # Get intersection
+    # Initialize common_docs with the set of documents for the first term
     common_docs = doc_sets[0]
-    #Iterate over remaining sets
+    # Iterate over remaining sets
     for doc_set in doc_sets[1:]:
-        #Update common_docs with the intersection of each subsequent set
+        # Update common_docs with the intersection of each subsequent set
         common_docs.intersection_update(doc_set)
-        #Check if the intersection is empty
+        # Check if the intersection is empty
         if not common_docs:
-            #Return empty if non common documents exist
+            # Return empty if non common documents exist
             return []
 
-    #Calculate importance scores for each document
+    # Calculate importance scores for each document
     scores = []
-    #Loop through each document that contains all query terms
+    # Loop through each document that contains all query terms
     for doc in common_docs:
         score = 0.0
-        #Iterate over each term in the query
+        # Iterate over each term in the query
         for term in terms:
-            #Retrieve term frequency (tf) and associate importance value for the termin in the document from the index
+            # Retrieve term frequency (tf) and associate importance value for the termin in the document from the index
             tf, importance = index[term][doc]
 
             # Normalize term frequency by relative term frequency to reduce impact of excessively long files
-            tf = float(tf) / doc_counts[doc] * 100
+            tf = 1 + math.log(float(tf))
 
-            #Compute document frequency (df)
+            # Compute document frequency (df)
             df = len(index[term])
-            #Calculate inverse document frequency
-            #IDF = log(total number of documents in corpus D/number of documents containing term t)
+            # Calculate inverse document frequency
+            # IDF = log(total number of documents in corpus D/number of documents containing term t)
             idf = math.log(total_docs / df) if df else 0 #return 0 if document frequency is 0
             term_score = tf * idf * (1 + importance_boost * importance)
+
+            # Penalize excessively long or short files
             if doc_counts[doc] > 10000 or doc_counts[doc] < 200:
                 term_score *= 0.60
-            #Add the term's score to the document score
+
+            # Add the term's score to the document score
             score += term_score
-        #Append scores
+
+        # Append scores
         scores.append((doc, score))
 
-    #Return list in descending order
+    # Return list in descending order
     return sorted(scores, key=lambda x: -x[1])
 
 def main():
@@ -172,7 +183,7 @@ def main():
         results = search(query, secondary_index, 550000, doc_counts)
         end = time.time()
         print(f"\nTop results for '{query}':")
-        #Print the top 5 URLs
+        # Print the top 5 URLs
         for i, (url, score) in enumerate(results[:5]):
             print(f"{i + 1}. {url} (Score: {score:.2f})")
 
