@@ -6,29 +6,32 @@ import processor
 from lxml import etree
 
 from processor import retrieve_important, retrieve_content
+import time
 
 # Inverted INDEX data structure will be a
 # dictionary: key: token -> value: dictionary of documents where key: documentname -> value: namedtuple
 # named tuple will contain (wordfrequency, importance)
 
 THRESHOLD = 15000 # for every 15k pages, partially index into disk memory (new file, indexed_{num})
-FILE_COUNT = 0 # checking if threshold matches number f files
+FILE_COUNT = 0 # checking if threshold matches number of files
 PFILE_COUNT = 0 # count for number of partial indexes
 INDEX = dict()
 DOC_COUNTS = dict()
 Docinfo = namedtuple('Docinfo', ['wordfrequency', 'importance'])
+HASHES = dict() # for checking document duplicates
+SIMHASHES = dict() # for checking near duplicates
 
 def updateIndex(word, url):
     global INDEX
     # if the word doesn't exist add it and give it a dictionary add the document
-    if INDEX.get(word) is None:
+    if not INDEX.get(word, False):
         INDEX[word] = dict()
         INDEX[word][url] = Docinfo(1, 0)
 
     # if the word exists check if your current doc has already been added
     else:
         # so only update word frequency
-        if INDEX[word].get(url) is not None:
+        if INDEX[word].get(url, False):
             INDEX[word][url] = Docinfo(INDEX[word][url].wordfrequency + 1, 0)
 
         # if document doesn't exist, add it to the dictionary
@@ -64,9 +67,6 @@ def main():
             if os.path.basename(file).startswith("."):
                 continue
 
-            # Increment file count
-            FILE_COUNT += 1
-
             # Open file and load json
             file = os.path.join(folder, file)
             with open(file, "r") as f:
@@ -80,34 +80,45 @@ def main():
                     continue
 
                 # 2 & 3) Tokenize important content and all content
-                regular_list = retrieve_content(tree)
+                non_stem, regular_list = retrieve_content(tree)
                 important_set = retrieve_important(tree)
 
-                # 4) populate the INDEX
-                url = jsondata['url']
+                non_stem = ' '.join(regular_list)
 
-                # Save the total term count
-                DOC_COUNTS[url] = len(regular_list)
+                if processor.is_duplicate(non_stem, HASHES, SIMHASHES) is False:
+                    # print(token_content_str)
+                    # Increment file count
+                    FILE_COUNT += 1
+                    # 4) populate the index
+                    url = jsondata['url']
 
-                # For every word update the index with it
-                for word in regular_list:
-                    updateIndex(word, url)
+                    # Save the total term count
+                    DOC_COUNTS[url] = len(regular_list)
 
-                # For every important word, update its importance
-                for word in important_set:
-                    INDEX[word][url] = INDEX[word][url]._replace(importance=1)
+                    # For every word update the index with it
+                    for word in regular_list:
+                        updateIndex(word, url)
+
+                    # For every important word, update its importance
+                    for word in important_set:
+                        INDEX[word][url] = INDEX[word][url]._replace(importance=1)
+
+                    # 5a) Loop until threshold is met with file_count. call partial indexer after.
+                    if THRESHOLD <= FILE_COUNT:
+                        PFILE_COUNT += 1
+                        processor.partial_indexer(INDEX, PFILE_COUNT)
+                        # 5b) set counter variable back to 0 for next batch of 15k files
+                        FILE_COUNT = 0
+                        INDEX = dict()
+                        print(f"partial index {PFILE_COUNT} dumped")
+                # else:
+                #     print('\nDUPLICATE DETECTED')
+                #     print(non_stem, "\n")
+                # print("\n")
+                # time.sleep(5)
 
             except Exception as e:
                 print(f"failed: {e} at line:", e.__traceback__.tb_lineno)
-
-            # 5a) Loop until threshold is met with file_count. call partial indexer after.
-            if THRESHOLD <= FILE_COUNT:
-                PFILE_COUNT += 1
-                processor.partial_indexer(INDEX, PFILE_COUNT)
-                # 5b) set counter variable back to 0 for next batch of 15k files
-                FILE_COUNT = 0
-                INDEX = dict()
-                print(f"partial index {PFILE_COUNT} dumped")
 
     # last few files
     PFILE_COUNT += 1

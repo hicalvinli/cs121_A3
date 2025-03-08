@@ -166,7 +166,7 @@ def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importan
             tf, importance = term_index[doc]
 
             # Calculate tf
-            tf = 1 + math.log(float(tf))
+            tf = float(tf) / doc_freqs[doc] * 100
 
             # Calculate idf
             idf = len(term_index)

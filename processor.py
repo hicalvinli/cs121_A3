@@ -30,14 +30,14 @@ def retrieve_important(tree: etree.ElementTree) -> set[str]:
     # Return set of stemmed tokens
     return set(_porter_stem(_tokenize(content)))
 
-def retrieve_content(tree: etree.ElementTree) -> list[str]:
+def retrieve_content(tree: etree.ElementTree) -> tuple:
     # Remove all JS and css script/style tags
     to_drop = tree.xpath('//style|//script')
     for tag in to_drop:
         tag.getparent().remove(tag)
 
-    # Get all text content
-    return _porter_stem(_tokenize(' '.join(tree.xpath("//text()"))))
+    # Get all text content, returns non stemmed and stemmed
+    return _tokenize(' '.join(tree.xpath("//text()"))), _porter_stem(_tokenize(' '.join(tree.xpath("//text()"))))
 
 def _alpha_sort(indexer: dict) -> dict:
     # Sort inv. index alphabetically by token (key) in ascending order
@@ -117,18 +117,21 @@ def merge_indexes(file_num: int) -> None:
         FINAL = _alpha_sort(FINAL)
         _write_sub_final(bucket)
 
-def checksum(content: str) -> bool:
+def is_duplicate(content, HASHES, SIMHASHES):
+    return _checksum(content, HASHES) or _simhash(content, SIMHASHES)
+
+def _checksum(content: str, HASHES: dict) -> bool:
     # Calculate checksum for a string and return. Utilizing hashlib MD5 for medium strength
     # and speed hashing. Checks existence of hash within dictionary. Returns True if duplicate,
     # else False.
-    global HASHES
     md5_hash = hashlib.md5(content.encode()).hexdigest()
-    result = HASHES.get(md5_hash, False)
+    if md5_hash in HASHES:
+        return True
     HASHES[md5_hash] = True
-    return result
+    return False
 
 
-def simhash(content: str) -> bool:
+def _simhash(content: str, SIMHASHES: dict) -> bool:
     # Calculate simhash and return TRUE if is a near duplicate and FALSE if a new document that isn't
     # 1) Tokenize the input document into "features" which are words in our case, and assign weight using word frequency
     tokenlist = tokenizer.tokenize(content)
@@ -165,7 +168,6 @@ def simhash(content: str) -> bool:
             binary_string += "0"
     simhash_value = int(binary_string, 2)
 
-    global SIMHASHES
     # 6) Compare documents using fraction of bits that are similar
     for sim in SIMHASHES:
         different_bits = bin(simhash_value ^ sim).count("1") # XOR operation to see which bits are different
