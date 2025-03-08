@@ -112,6 +112,7 @@ def main():
     # last few files
     PFILE_COUNT += 1
     processor.partial_indexer(INDEX, PFILE_COUNT)
+
     # set counter variable back to 0 for next batch of 15k files
     FILE_COUNT = 0
     INDEX = dict()
@@ -121,8 +122,6 @@ def main():
     processor.merge_indexes(PFILE_COUNT)
     print("alpha index dumped")
     processor.write_full()
-    # with open("data.json", "w") as file:
-    #     json.dump(INDEX, file)
 
     print("DUMPED")
 

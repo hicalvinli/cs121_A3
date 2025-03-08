@@ -1,8 +1,11 @@
 import json
 import math
+import re
+
 import processor
 import time
 
+SECONDARY_INDEX = dict()
 STOPS = ['a', 'about', 'above', 'after', 'again', 'against', 'all', 'am', 'an', 'and', 'any',
              'are', "aren't", 'as', 'at', 'be', 'because', 'been', 'before', 'being', 'below',
              'between', 'both', 'but', 'by', "can't", 'cannot', 'could', "couldn't", 'did',
@@ -28,123 +31,208 @@ def load_doc_counts():
 
     return index
 
-def load_index_and_metadata():
-    #Load the inverted index
-    with open("data.json", "r") as f:
-        #Read the json data from the file
-        #Convert the data into a Python dict, this is the inverted index
-        index = json.load(f)
+# def load_index_and_metadata():
+#     # Load the inverted index
+#     with open("data.json", "r") as f:
+#
+#         # Read the json data from the file
+#         # Convert the data into a Python dict, this is the inverted index
+#         index = json.load(f)
+#
+#     all_urls = set()
+#
+#     # Iterate over each term in the index
+#     for term in index:
+#
+#         # Add the keys to the set for each term
+#         all_urls.update(index[term].keys())
+#
+#     # Count the number of unique documents
+#     total_docs = len(all_urls)
+#
+#     # Return the inverted index and total number of unique documents
+#     return index, total_docs
 
-    all_urls = set()
-    #Iterate over each term in the index
-    for term in index:
-        #Add the keys to the set for each term
-        all_urls.update(index[term].keys())
-    #Count the number of unique documents
-    total_docs = len(all_urls)
+def load_secondary_index():
+    with open("secondary_index.json", "r") as f:
+        return json.load(f)
 
-    #Return the inverted index and total number of unique documents
-    return index, total_docs
-
-#Basically the same thing we did before lmao
 def tokenize_and_stem(query):
-    #Tokenize and stem
+    # Tokenize and stem
     return processor._porter_stem(processor._tokenize(query))
 
-#Search function
-def search(query, index, total_docs, doc_counts, importance_boost=0.65):
+def get_matching_docs_and_postings(main_indexfd, secondary_index, terms):
 
-    stop_threshold = 0.5
+    # Return a dict of all the docs that contain all terms
+    doc_sets = set()
+    term_postings = {}
+    first = True
 
-    #Process the query
+    for term in terms:
+        term_docs = set()
+        setstr = ""
+
+        # Seek to correct spot
+        main_indexfd.seek(secondary_index[term], 0)
+        char = main_indexfd.read(1)
+
+        # Skip past key and the initial curly brace
+        while char != '{':
+            char = main_indexfd.read(1)
+
+        # Skip curly brace
+        char = main_indexfd.read(1)
+
+        # Keep reading chars until end of term document list
+        while char != '}':
+            setstr += char
+            char = main_indexfd.read(1)
+
+        # Add to dictionary
+        other = True
+        for doc in setstr.split("], "):
+            if other:
+                other = False
+                doc = doc.replace("[", "")
+                doc = doc.replace("]", "")
+                doc = doc.split(": ")
+
+                term_docs.add(doc[0][1:-1])
+
+                if term not in term_postings:
+                    term_postings[term] = {}
+
+                term_postings[term][doc[0][1:-1]] = [int(i) for i in doc[1].split(", ")]
+            else:
+                other = True
+
+        # If the first one, initialize doc_sets, otherwise intersection
+        if first:
+            doc_sets = term_docs
+            first = False
+        else:
+            doc_sets = doc_sets.intersection(term_docs)
+
+    return [doc_sets, term_postings]
+
+# Search function
+def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importance_boost=0.65, stop_threshold=0.34):
+
+    # Process the query
     terms = tokenize_and_stem(query)
-    #Check if the query is empty
+
+    # Check if the query is empty
     if not terms:
         return []
 
     # Count number of stopwords
-    #stopwords = 0
-    #for word in terms:
-    #    if word in STOPS:
-    #        stopwords += 1
+    stopwords = 0
+    for word in terms:
+        if word in STOPS:
+            stopwords += 1
 
-    #stopwords = float(stopwords) / len(terms)
+    # If the ratio of stopwords in the query is under a certain threshold, they are not important
+    # so remove them from the query for more accurate search
+    stopwords = float(stopwords) / len(terms)
+    if stopwords < stop_threshold:
+        terms = [term for term in terms if term.lower() not in STOPS]
 
-    #if stopwords < stop_threshold:
-    #    terms = [term for term in terms if term.lower() not in STOPS]
-
-    #Check if terms exist in the index
-    #Iterate over each stemmed term
+    # Check if terms exist in the index
+    # Iterate over each stemmed term
     for term in terms:
-        #Check if the term is present in the inverted index
-        if term not in index:
-            #Return empty if any term is not found in the index
-            #There are no documents containing all the terms
+
+        # Check if the term is present in the bookkeeping index
+        if term not in secondary_index:
+
+            # Return empty if any term is not found in the bookkeeping index
+            # There are no documents containing all the terms
             return []
 
-    #Get document lists for each term
-    doc_sets = [set(index[term].keys()) for term in terms]
+    # Get document lists for each term
+    docs, term_postings_dict = get_matching_docs_and_postings(main_indexfd, secondary_index, terms)
 
-    #Get intersection
-    #Initalize common_docs with the set of documents for the first term
-    common_docs = doc_sets[0]
-    #Iterate over remaining sets
-    for doc_set in doc_sets[1:]:
-        #Update common_docs with the intersection of each subsequent set
-        common_docs.intersection_update(doc_set)
-        #Check if the intersection is empty
-        if not common_docs:
-            #Return empty if non common documents exist
-            return []
+    # If there were no documents found that had all terms, exit
+    if len(docs) == 0:
+        return []
 
-    #Calculate importance scores for each document
+    # Calculate importance scores for each document
     scores = []
-    #Loop through each document that contains all query terms
-    for doc in common_docs:
+    for doc in docs:
         score = 0.0
-        #Iterate over each term in the query
+
         for term in terms:
-            #Retrieve term frequency (tf) and associate importance value for the termin in the document from the index
-            tf, importance = index[term][doc]
+            # Retrieve term frequency (tf) and associate importance value for the term in the document from the index
+            term_index = term_postings_dict[term]
+            tf, importance = term_index[doc]
 
-            # Normalize term frequency by relative term frequency to reduce impact of excessively long files
-            tf = float(tf) / doc_counts[doc] * 100
+            # Calculate tf
+            tf = 1 + math.log(float(tf))
 
-            #Compute document frequency (df)
-            df = len(index[term])
-            #Calculate inverse document frequency
-            #IDF = log(total number of documents in corpus D/number of documents containing term t)
-            idf = math.log(total_docs / df) if df else 0 #return 0 if document frequency is 0
+            # Calculate idf
+            idf = len(term_index)
+            idf = math.log(total_docs / idf) if idf else 0
+
+            # Calculate score
             term_score = tf * idf * (1 + importance_boost * importance)
-            if doc_counts[doc] > 10000 or doc_counts[doc] < 200:
+
+            # Penalize excessively long or short files
+            if doc_freqs[doc] > 10000 or doc_freqs[doc] < 200:
                 term_score *= 0.60
-            #Add the term's score to the document score
+
+            # Add the term's score to the document score
             score += term_score
-        #Append scores
+
+        # Append scores
         scores.append((doc, score))
 
-    #Return list in descending order
+    # Return list in descending order
     return sorted(scores, key=lambda x: -x[1])
 
 def main():
-    doc_counts = load_doc_counts()
-    index, total_docs = load_index_and_metadata()
-    print(f"Index loaded with {total_docs} documents.")
 
-    while True:
-        query = input("\nEnter search query (enter '0' to quit): ").strip()
-        if query == '0':
-            break
+    start = time.time()
+    # Load the document counts
+    doc_freqs = load_doc_counts()
+    num_docs = len(doc_freqs)
 
-        start = time.time()
-        results = search(query, index, total_docs, doc_counts)
-        end = time.time()
-        print(f"\nTop results for '{query}':")
-        #Print the top 5 URLs
-        for i, (url, score) in enumerate(results[:5]):
-            print(f"{i + 1}. {url} (Score: {score:.2f})")
+    # Load the bookkeeping index
+    secondary_index = load_secondary_index()
+    end = time.time()
 
-        print(f"\nTime elapsed: {1000 * (end - start)} ms.")
+    # Total usage: approx. 30 MB of main memory
+
+    print(f"\nSearch initialized. Time elapsed: {1000 * (end - start)} ms.")
+
+    # Open file descriptor for main index
+    with open("data.json", "r") as main_indexfd:
+
+        while True:
+            # Ask for input
+            query = input("\nEnter search query (enter '0' to quit): ").strip()
+            if query == '0':
+                break
+
+            # Begin time
+            start = time.time()
+
+            # Retrieve search results
+            results = search(query, main_indexfd, secondary_index, num_docs, doc_freqs)
+
+            # End time
+            end = time.time()
+
+            # Print the top 5 URLs
+            print(f"\nTop results for '{query}':")
+
+            # Special case if no results found
+            if len(results) == 0:
+                print("No results found.")
+            else:
+                for i, (url, score) in enumerate(results[:5]):
+                    print(f"{i + 1}. {url} (Score: {score:.2f})")
+
+            # Print time elapsed
+            print(f"\nTime elapsed: {1000 * (end - start)} ms.")
 
 if __name__ == "__main__":
     main()
