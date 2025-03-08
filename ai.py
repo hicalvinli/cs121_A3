@@ -3,14 +3,15 @@ from dotenv import load_dotenv # loading api key from .env for security
 from google import genai
 
 load_dotenv()
-
 GEMINI_API_KEY = os.getenv("GEMINI_API")
 
-client = genai.Client(api_key=GEMINI_API_KEY)
+class Summarizer():
+    def __init__(self, raw_content):
+        self.site_content = raw_content
 
-response = client.models.generate_content(
-    model="gemini-2.0-flash",
-    contents="Are you excited to be a website summarizer?",
-)
+    def query(self): # sends query in form of raw text content
+        pass
 
-print(response.text)
+    def summarize(self, resp): # outputs/returns model's response
+        pass
+
