@@ -61,10 +61,11 @@ def tokenize_and_stem(query):
     # Tokenize and stem
     return processor._porter_stem(processor._tokenize(query))
 
-def get_matching_docs(main_indexfd, secondary_index, terms):
+def get_matching_docs_and_postings(main_indexfd, secondary_index, terms):
 
     # Return a dict of all the docs that contain all terms
     doc_sets = set()
+    term_postings = {}
     first = True
 
     for term in terms:
@@ -94,8 +95,14 @@ def get_matching_docs(main_indexfd, secondary_index, terms):
                 other = False
                 doc = doc.replace("[", "")
                 doc = doc.replace("]", "")
-                doc = doc.split(": ")[0]
-                term_docs.add(doc[1:-1])
+                doc = doc.split(": ")
+
+                term_docs.add(doc[0][1:-1])
+
+                if term not in term_postings:
+                    term_postings[term] = {}
+
+                term_postings[term][doc[0][1:-1]] = [int(i) for i in doc[1].split(", ")]
             else:
                 other = True
 
@@ -106,42 +113,7 @@ def get_matching_docs(main_indexfd, secondary_index, terms):
         else:
             doc_sets = doc_sets.intersection(term_docs)
 
-    return doc_sets
-
-def get_term_postings(main_indexfd, secondary_index, term):
-
-    term_postings = {}
-    postings = ""
-
-    # Seek to correct spot
-    main_indexfd.seek(secondary_index[term], 0)
-    char = main_indexfd.read(1)
-
-    # Skip past key and the initial curly brace
-    while char != '{':
-        char = main_indexfd.read(1)
-
-    # Skip curly brace
-    char = main_indexfd.read(1)
-
-    # Keep reading chars until end of term document list
-    while char != '}':
-        postings += char
-        char = main_indexfd.read(1)
-
-    # Split to get each individual entry
-    other = True
-    for posting in postings.split("], "):
-        if other:
-            other = False
-            posting = posting.replace("[", "")
-            posting = posting.replace("]", "")
-            posting = posting.split(": ")
-            term_postings[posting[0][1:-1]] = [int(i) for i in posting[1].split(", ")]
-        else:
-            other = True
-
-    return term_postings
+    return [doc_sets, term_postings]
 
 # Search function
 def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importance_boost=0.65, stop_threshold=0.34):
@@ -177,16 +149,11 @@ def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importan
             return []
 
     # Get document lists for each term
-    docs = get_matching_docs(main_indexfd, secondary_index, terms)
+    docs, term_postings_dict = get_matching_docs_and_postings(main_indexfd, secondary_index, terms)
 
     # If there were no documents found that had all terms, exit
     if len(docs) == 0:
         return []
-
-    # Get all term postings so don't have to do it repeatedly later
-    term_postings_dict = {}
-    for term in terms:
-        term_postings_dict[term] = get_term_postings(main_indexfd, secondary_index, term)
 
     # Calculate importance scores for each document
     scores = []
@@ -223,14 +190,18 @@ def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importan
 
 def main():
 
+    start = time.time()
     # Load the document counts
     doc_freqs = load_doc_counts()
     num_docs = len(doc_freqs)
 
     # Load the bookkeeping index
     secondary_index = load_secondary_index()
+    end = time.time()
 
     # Total usage: approx. 30 MB of main memory
+
+    print(f"\nSearch initialized. Time elapsed: {1000 * (end - start)} ms.")
 
     # Open file descriptor for main index
     with open("data.json", "r") as main_indexfd:
