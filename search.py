@@ -88,8 +88,16 @@ def get_matching_docs(main_indexfd, secondary_index, terms):
             char = main_indexfd.read(1)
 
         # Add to dictionary
-        for doc in re.findall(r"'(.*?)'", setstr):
-            term_docs.add(doc)
+        other = True
+        for doc in setstr.split("], "):
+            if other:
+                other = False
+                doc = doc.replace("[", "")
+                doc = doc.replace("]", "")
+                doc = doc.split(": ")[0]
+                term_docs.add(doc[1:-1])
+            else:
+                other = True
 
         # If the first one, initialize doc_sets, otherwise intersection
         if first:
@@ -122,11 +130,16 @@ def get_term_postings(main_indexfd, secondary_index, term):
         char = main_indexfd.read(1)
 
     # Split to get each individual entry
-    postings = postings.split(", '")
-    for posting in postings:
-        posting = re.sub(r"(\'?\[?\]?)", "", posting)
-        posting = posting.split(": ")
-        term_postings[posting[0]] = [int(i) for i in posting[1].split(", ")]
+    other = True
+    for posting in postings.split("], "):
+        if other:
+            other = False
+            posting = posting.replace("[", "")
+            posting = posting.replace("]", "")
+            posting = posting.split(": ")
+            term_postings[posting[0][1:-1]] = [int(i) for i in posting[1].split(", ")]
+        else:
+            other = True
 
     return term_postings
 
@@ -170,22 +183,26 @@ def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importan
     if len(docs) == 0:
         return []
 
+    # Get all term postings so don't have to do it repeatedly later
+    term_postings_dict = {}
+    for term in terms:
+        term_postings_dict[term] = get_term_postings(main_indexfd, secondary_index, term)
+
     # Calculate importance scores for each document
     scores = []
     for doc in docs:
         score = 0.0
 
         for term in terms:
-
             # Retrieve term frequency (tf) and associate importance value for the term in the document from the index
-            term_index = get_term_postings(main_indexfd, secondary_index, term)
+            term_index = term_postings_dict[term]
             tf, importance = term_index[doc]
 
             # Calculate tf
             tf = 1 + math.log(float(tf))
 
             # Calculate idf
-            idf = len(term_index[term])
+            idf = len(term_index)
             idf = math.log(total_docs / idf) if idf else 0
 
             # Calculate score
