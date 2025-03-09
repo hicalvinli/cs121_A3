@@ -71,7 +71,7 @@ with st.container():
 # Handle Search
 if submitted and query:
     start_time = time.time()
-    with open("rsrc/DEV-2/data.json", "r") as main_indexfd:
+    with open("data.json", "r") as main_indexfd:
         results = search(query, main_indexfd, secondary_index, num_docs, doc_counts)
     execution_time = round((time.time() - start_time) * 1000, 2)
 
@@ -82,7 +82,7 @@ if submitted and query:
     # Check if results were found
     if len(results) > 0:
         # Iterate over the top 5 results
-        for i, (url, score) in enumerate(results[:5]):
+        for i, (url, score) in enumerate(results[:10]):
             # Container for each result
             with st.container():
                 st.markdown(f'<div class="result-box">', unsafe_allow_html=True)
@@ -95,8 +95,6 @@ if submitted and query:
                 with col2:
                     st.markdown(f'<div class="result-url"><a href="{url}" target="_blank">{url}</a></div>',
                                 unsafe_allow_html=True)
-                    st.markdown(f'<div class="result-score">Relevance Score: {score:.2f}</div>', unsafe_allow_html=True)
-
                     # AI Summary
                     # Retrieve and summarize site content for URL
                     summarizer = ai.Summarizer(url)
@@ -109,5 +107,8 @@ if submitted and query:
                     # Display summary
                     st.markdown(f'<div class ="result-summary">{summary_text}</div>', unsafe_allow_html=True)
                     st.markdown('<div>', unsafe_allow_html=True)
+
+                    st.markdown(f'<div class="result-score">Relevance Score: {score:.2f}</div>', unsafe_allow_html=True)
+
     else:
         st.warning("No results found for your query")
