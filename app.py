@@ -1,6 +1,7 @@
 import streamlit as st
 from search import load_secondary_index, load_doc_counts, search
 import time
+import ai
 
 secondary_index = load_secondary_index()
 doc_counts = load_doc_counts()
@@ -47,6 +48,10 @@ st.markdown(
         color: #000000;
         font-size: 0.9rem;
     }
+    .result-summary {
+        color: #333333;
+        font-size: 1rem;
+        margin-top 0.5rem;
     </style>
     """,
     unsafe_allow_html=True
@@ -66,7 +71,7 @@ with st.container():
 # Handle Search
 if submitted and query:
     start_time = time.time()
-    with open("data.json", "r") as main_indexfd:
+    with open("rsrc/DEV-2/data.json", "r") as main_indexfd:
         results = search(query, main_indexfd, secondary_index, num_docs, doc_counts)
     execution_time = round((time.time() - start_time) * 1000, 2)
 
@@ -91,6 +96,18 @@ if submitted and query:
                     st.markdown(f'<div class="result-url"><a href="{url}" target="_blank">{url}</a></div>',
                                 unsafe_allow_html=True)
                     st.markdown(f'<div class="result-score">Relevance Score: {score:.2f}</div>', unsafe_allow_html=True)
+
+                    # AI Summary
+                    # Retrieve and summarize site content for URL
+                    summarizer = ai.Summarizer(url)
+                    # Search corpus to retrieve raw content
+                    summarizer.search_corpus()
+                    # Generate summary
+                    summarizer.query(query)
+                    # Extract the summary text from API
+                    summary_text = summarizer.response.text if summarizer.response else "Summary not available."
+                    # Display summary
+                    st.markdown(f'<div class ="result-summary">{summary_text}</div>', unsafe_allow_html=True)
                     st.markdown('<div>', unsafe_allow_html=True)
     else:
         st.warning("No results found for your query")
