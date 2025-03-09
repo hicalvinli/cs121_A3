@@ -6,7 +6,6 @@ import hashlib
 import tokenizer
 from lxml import etree
 
-FINAL = dict()
 SECONDARY_INDEX = dict()
 
 def _tokenize(text: str) -> list[str]:
@@ -49,73 +48,101 @@ def partial_indexer(indexer: dict, pfile_count: int) -> None:
     # Write index to partial index file after 15k page threshold is met
     indexer = _alpha_sort(indexer)
     with open(f"indexed_{pfile_count}.json", "w") as f:
-        json.dump(indexer, f)
 
-def _write_sub_final(bucket: tuple):
-    # Writes the final index of each bucket into its corresponding file.
-    global FINAL
-    with open(f"{str(bucket[0])}-{str(bucket[-1])}.json", "w") as f: # new file with bucket range
-        json.dump(FINAL, f)
-    FINAL = dict()
+        for key in indexer:
+            f.write(f"{key}: {str(indexer[key])[1:-1]}\n")
 
-def write_full():
-    all_ind = ["0-9.json", "a-g.json", "h-o.json", "p-z.json"]
-    comb = {}
-    with open("data.json", "w") as f:
-        byte_count = 0
-        for pind in all_ind:
-            with open(pind, "r") as f2:
-                comb = (json.load(f2))
-    # when you get the big data file, calculate the byte offset and place them into the secondary index
-    # term with start with " and end with ", then keep adding until you see } <- this will indicate end of
-    # documents for that term, then count until next ", and repeat :D
-    # instead of dumping i will manually write to the dict on my own so i can count the bytes while writing
-                comb_len = len(comb)
-                i = 0
-                for key, value in comb.items():
-                    # this will assign byte_count for the term, then write the key value in json format
-                    SECONDARY_INDEX[key] = byte_count
-                    if i >= comb_len - 1 and pind == "p-z.json":
-                        pair_str = '"' + str(key) + '"' + ": " + str(value) + "}"
-                    else:
-                        pair_str = '"' + str(key) + '"' + ": " + str(value) + ", "
-                    # last key is special
-                    f.write(pair_str)
-                    byte_count += len(pair_str)
-                    # add 2 bc 1 comma, and 1 space, and {}
-                    i += 1
+def index_min(ls: list) -> int:
+    if len(ls) == 0:
+        return -1
 
-    with open("secondary_index.json", "w") as f:
-        json.dump(SECONDARY_INDEX, f)
-
-    print(SECONDARY_INDEX)
-    # with open("data.json", "w") as f:
-        # json.dump(comb, f)
-
-def _split_indexes(pindex: int, bucket: tuple) -> None:
-    # Splits indexes based on range.
-    global FINAL
-    with open(f"indexed_{pindex}.json", 'r') as f:
-        # ijson turns partial index into an iterator, avoiding reading
-        # it into main memory all at once.
-        for token, sub_info in ijson.kvitems(f, ''):
-            if token[0] in bucket:
-                total_info = FINAL.get(token, {}) # check if token already exists in the final index
-                total_info.update(sub_info) # add additional document info to the token
-                FINAL[token] = total_info # update the final index with the additional information
+    min = 0
+    for i in range(1, len(ls)):
+        if ls[i] < ls[min]:
+            min = i
+    return min
 
 def merge_indexes(file_num: int) -> None:
-    # Merges all partial indexes alphabetically, writing each partial into a split range index
-    global FINAL
-    index_buckets = [('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
-                     ('a', 'b', 'c', 'd', 'e', 'f', 'g'),
-                     ('h', 'i', 'j', 'k', 'l', 'm', 'n', 'o'),
-                     ('p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z')]
-    for bucket in index_buckets:
-        for pindex in range(1, file_num + 1):
-            _split_indexes(pindex, bucket)
-        FINAL = _alpha_sort(FINAL)
-        _write_sub_final(bucket)
+    # Merges all partial indexes alphabetically, writing each partial into a file
+
+    global SECONDARY_INDEX
+    byte_count = 0
+    open_fds = file_num
+
+    with open("data.json", "w") as merged:
+        # Open all files and append first line into terms list
+        fds = list()
+        terms = list()
+        for i in range(1, file_num + 1):
+            fds.append(open(f"indexed_{i}.json", "r"))
+            terms.append(fds[i - 1].readline())
+
+            if terms[i - 1] == "":
+                fds[i - 1].close()
+                open_fds -= 1
+                terms[i - 1] = "\uffff"
+            else:
+                # Process each term line
+                terms[i - 1] = terms[i - 1].split(": ", 1)
+
+        # Initialize vars
+        smallest_index = index_min([t[0] for t in terms])
+        smallest = terms[smallest_index]
+        terms[smallest_index] = fds[smallest_index].readline()
+        if terms[smallest_index] == "":
+            terms[smallest_index] = ["\uffff"]
+
+        # While there is still an open file
+        while not all(fd.closed for fd in fds):
+
+            # Get lexicographically smallest term
+            next_smallest_index = index_min([t[0] for t in terms])
+            next_smallest = terms[next_smallest_index]
+
+            # If next smallest is equivalent keys, merge the values
+            if next_smallest[0] == smallest[0]:
+                smallest[1] = smallest[1] + " " + next_smallest[1]
+            else:
+                to_write = f"{smallest[0]}: {smallest[1]}"
+                merged.write(to_write)
+                SECONDARY_INDEX[smallest[0]] = byte_count
+                byte_count += len(to_write)
+                smallest = next_smallest
+
+            # Read next
+            terms[next_smallest_index] = fds[next_smallest_index].readline().split(": ", 1)
+
+            # If next is empty, close
+            if "" in terms[next_smallest_index]:
+                fds[next_smallest_index].close()
+                open_fds -= 1
+                terms[next_smallest_index] = ["\uffff"]
+
+                # If there is only one fd open left, iterate to write all of those and exit
+                if open_fds == 1:
+
+                    # Find open
+                    smallest_index = 0
+                    for i in range(len(fds)):
+                        if not fds[i].closed:
+                            smallest_index = i
+                            break
+
+                    # Write all remaining
+                    while smallest[0] != "":
+                        to_write = f"{smallest[0]}: {smallest[1]}"
+                        merged.write(to_write)
+                        SECONDARY_INDEX[smallest[0]] = byte_count
+                        byte_count += len(to_write)
+                        smallest = fds[smallest_index].readline().split(": ", 1)
+
+                    # Close and dump second
+                    fds[smallest_index].close()
+                    with open("secondary_index.json", "w") as f:
+                        json.dump(SECONDARY_INDEX, f)
+
+                    # Exit
+                    return
 
 def is_duplicate(content, HASHES, SIMHASHES):
     return _checksum(content, HASHES) or _simhash(content, SIMHASHES)
