@@ -32,28 +32,6 @@ def load_doc_counts():
 
     return index
 
-# def load_index_and_metadata():
-#     # Load the inverted index
-#     with open("data.json", "r") as f:
-#
-#         # Read the json data from the file
-#         # Convert the data into a Python dict, this is the inverted index
-#         index = json.load(f)
-#
-#     all_urls = set()
-#
-#     # Iterate over each term in the index
-#     for term in index:
-#
-#         # Add the keys to the set for each term
-#         all_urls.update(index[term].keys())
-#
-#     # Count the number of unique documents
-#     total_docs = len(all_urls)
-#
-#     # Return the inverted index and total number of unique documents
-#     return index, total_docs
-
 def load_secondary_index():
     with open("secondary_index.json", "r") as f:
         return json.load(f)
@@ -71,41 +49,27 @@ def get_matching_docs_and_postings(main_indexfd, secondary_index, terms):
 
     for term in terms:
         term_docs = set()
-        setstr = ""
 
         # Seek to correct spot
         main_indexfd.seek(secondary_index[term], 0)
-        char = main_indexfd.read(1)
-
-        # Skip past key and the initial curly brace
-        while char != '{':
-            char = main_indexfd.read(1)
-
-        # Skip curly brace
-        char = main_indexfd.read(1)
-
-        # Keep reading chars until end of term document list
-        while char != '}':
-            setstr += char
-            char = main_indexfd.read(1)
+        line = main_indexfd.readline()
 
         # Add to dictionary
-        other = True
-        for doc in setstr.split("], "):
-            if other:
-                other = False
-                doc = doc.replace("[", "")
-                doc = doc.replace("]", "")
-                doc = doc.split(": ")
+        term, postings = line.split(": ", 1)
+        postings = ': '.join(postings.split("), ")).split(": ")
+        for i in range(0, len(postings), 2):
+            # Transform line to get the data we want
+            url = postings[i][1:-1]
+            posting = postings[i + 1].replace("Docinfo(", "")
+            posting = posting.replace("wordfrequency=", "").replace("importance=", "").replace(")", "")
 
-                term_docs.add(doc[0][1:-1])
+            # Add to the term doc set
+            term_docs.add(url)
 
-                if term not in term_postings:
-                    term_postings[term] = {}
-
-                term_postings[term][doc[0][1:-1]] = [int(i) for i in doc[1].split(", ")]
-            else:
-                other = True
+            # Add to the postings
+            if term not in term_postings:
+                term_postings[term] = {}
+            term_postings[term][url] = [int(i) for i in posting.split(", ")]
 
         # If the first one, initialize doc_sets, otherwise intersection
         if first:
@@ -228,6 +192,7 @@ def main():
             # Special case if no results found
             if len(results) == 0:
                 print("No results found.")
+
             else:
                 for i, (url, score) in enumerate(results[:10]):
                     print(f"{i + 1}. {url} (Score: {score:.2f})")
@@ -235,7 +200,6 @@ def main():
                     site.search_corpus()
                     response = site.query(query)
                     site.summarize(response)
-
 
             # Print time elapsed
             print(f"\nTime elapsed: {1000 * (end - start)} ms.")
