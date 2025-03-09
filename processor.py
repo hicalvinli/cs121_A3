@@ -1,9 +1,7 @@
 import re
 import nltk
 import json
-import ijson
 import hashlib
-import tokenizer
 from lxml import etree
 
 SECONDARY_INDEX = dict()
@@ -154,16 +152,23 @@ def _checksum(content: str, HASHES: dict) -> bool:
     md5_hash = hashlib.md5(content.encode()).hexdigest()
     if md5_hash in HASHES:
         return True
-    HASHES[md5_hash] = True
-    return False
+    else:
+        HASHES[md5_hash] = True
+        return False
 
+def computeWordFrequencies(tokens, wordfreqs):
+    for token in tokens:
+        if token in wordfreqs:
+            wordfreqs[token] += 1
+        else:
+            wordfreqs[token] = 1
 
 def _simhash(content: str, SIMHASHES: dict) -> bool:
     # Calculate simhash and return TRUE if is a near duplicate and FALSE if a new document that isn't
     # 1) Tokenize the input document into "features" which are words in our case, and assign weight using word frequency
-    tokenlist = tokenizer.tokenize(content)
+    tokenlist = _tokenize(content)
     wordfreq = dict()
-    tokenizer.computeWordFrequencies(tokenlist, wordfreq)
+    computeWordFrequencies(tokenlist, wordfreq)
 
     # 2) Hash each feature using MD5 (128 bit)  For each feature, convert its hash to a binary number,
     hash_dict = dict()
