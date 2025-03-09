@@ -1,12 +1,14 @@
 import time
-from app2 import flask, render_template, request
-import search
+from flask import Flask, render_template, request
+from search import load_secondary_index, load_doc_counts, search
+
 
 app = Flask(__name__)
 
 # Load indexes
-index, total_docs = load_index_and_metadata()
+secondary_index = load_secondary_index()
 doc_counts = load_doc_counts()
+num_docs = len(doc_counts)
 
 @app.route("/", methods = ["GET", "POST"])
 def index_page():
@@ -21,7 +23,8 @@ def index_page():
         # Perform search if query is not empty
         if query:
             start_time = time.time()
-            results = search(query, index, total_docs, doc_counts)
+            with open("data.json", "r") as main_indexfd:
+                results = search(query, main_indexfd, secondary_index, num_docs, doc_counts)
             exec_time = round((time.time() - start_time) * 1000, 2)
 
     # Render the index.html
