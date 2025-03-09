@@ -16,7 +16,7 @@ class Summarizer():
             model = "gemini-2.0-flash",
             contents = f"Do not use text styling. Summarize this website in 2 sentences: {self.site_content}",
         )
-        return response
+        return response # error handling potentially?
 
     def summarize(self, resp): # outputs/returns model's response
         print(resp.text)

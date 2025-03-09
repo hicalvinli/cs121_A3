@@ -85,7 +85,8 @@ def main():
 
                 non_stem = ' '.join(regular_list)
 
-                if processor.is_duplicate(non_stem, HASHES, SIMHASHES) is False:
+                # avoiding duplicates or near duplicates and low to no content files
+                if len(regular_list) > 75 and processor.is_duplicate(non_stem, HASHES, SIMHASHES) is False:
                     # print(token_content_str)
                     # Increment file count
                     FILE_COUNT += 1
