@@ -18,5 +18,34 @@
             <button type = "submit">Search</button>
         </form>
     </div>
+
+    <!-- Check if query was submitted -->
+    {% if query %}
+        <!-- Display Results if they exist -->
+        {% if results %}
+            <h2>Top Results for '{{ query }}'</h2>
+            <p class = "caption">Found {{ results|length }} results in {{ exec_time }} ms</p>
+            <!-- Loop through each result -->
+            {% for result in results %}
+            <!-- Container for each result -->
+            <div class = "result-box">
+                <!-- Result number -->
+                <div class = "result-index">{{ loop.index }}</div>
+                <!-- Result Details -->
+                <div class = "result-details">
+                    <!-- Display the details of URL -->
+                    <div class = "result-url">
+                        <a href = "{{ result[0] }}" target = "_blank">{{ result[0] }}</a>
+                    </div>
+                    <!-- Display relevancy score -->
+                    <div class = "result-score">Relevance Score: {{ "%.2f"|format(result[1]) }}</div>
+                </div>
+            </div>
+        {% endfor %}
+    <!-- No results -->
+    {% else %}
+        <p class = "no-results">No results found for query</p>
+    {% endif %}
+{% endif %}
 </body>
 </html>
