@@ -132,10 +132,7 @@ def main():
 
     # merge
     processor.merge_indexes(PFILE_COUNT)
-    print("alpha index dumped")
-    processor.write_full()
-
-    print("DUMPED")
+    print("Secondary index dumped")
 
     # Write document term count file
     with open("doc_term_counts.json", "w") as f:
