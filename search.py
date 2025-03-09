@@ -3,6 +3,7 @@ import math
 import re
 
 import processor
+import ai
 import time
 
 SECONDARY_INDEX = dict()
@@ -230,6 +231,11 @@ def main():
             else:
                 for i, (url, score) in enumerate(results[:5]):
                     print(f"{i + 1}. {url} (Score: {score:.2f})")
+                    full_content = ai.search_corpus(url)
+                    site = ai.Summarizer(full_content)
+                    response = site.query(query)
+                    site.summarize(response)
+
 
             # Print time elapsed
             print(f"\nTime elapsed: {1000 * (end - start)} ms.")

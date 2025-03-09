@@ -80,12 +80,13 @@ def main():
                     continue
 
                 # 2 & 3) Tokenize important content and all content
-                non_stem, regular_list = retrieve_content(tree)
+                full_content, non_stem, regular_list = retrieve_content(tree)
                 important_set = retrieve_important(tree)
 
                 non_stem = ' '.join(regular_list)
 
-                if processor.is_duplicate(non_stem, HASHES, SIMHASHES) is False:
+                # avoiding duplicates or near duplicates and low to no content files
+                if len(regular_list) > 75 and processor.is_duplicate(non_stem, HASHES, SIMHASHES) is False:
                     # print(token_content_str)
                     # Increment file count
                     FILE_COUNT += 1
