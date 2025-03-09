@@ -36,8 +36,8 @@ def retrieve_content(tree: etree.ElementTree) -> tuple:
     for tag in to_drop:
         tag.getparent().remove(tag)
 
-    # Get all text content, returns non stemmed and stemmed
-    return _tokenize(' '.join(tree.xpath("//text()"))), _porter_stem(_tokenize(' '.join(tree.xpath("//text()"))))
+    # Get all text content, returns non tokenized, non stemmed, and stemmed
+    return ' '.join(tree.xpath("//text()")), _tokenize(' '.join(tree.xpath("//text()"))), _porter_stem(_tokenize(' '.join(tree.xpath("//text()"))))
 
 def _alpha_sort(indexer: dict) -> dict:
     # Sort inv. index alphabetically by token (key) in ascending order

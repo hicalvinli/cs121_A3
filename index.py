@@ -80,7 +80,7 @@ def main():
                     continue
 
                 # 2 & 3) Tokenize important content and all content
-                non_stem, regular_list = retrieve_content(tree)
+                full_content, non_stem, regular_list = retrieve_content(tree)
                 important_set = retrieve_important(tree)
 
                 non_stem = ' '.join(regular_list)
