@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang = "en">
+<head>
+    <meta charset = "UTF-8">
+    <title>CLAM Search Engine</title>
+    <link rel = "stylesheet" type = "text/css" href = "{{ url_for('static' , filename = 'css/style.css') }}">
+</head>
+<body>
+    <!-- Container for search and title -->
+    <div class = "search-container">
+        <!-- Title -->
+        <h1 class = "title">Welcome to CLAM</h1>
+        <!-- HTML form to send POST request when submitted -->
+        <form method = "post" action ="/">
+            <!-- Input field for the search query -->
+            <input type = "text" name = "query" placeholder = "Enter Query" value = "{{ query }}" required>
+            <!-- Button to submit search -->
+            <button type = "submit">Search</button>
+        </form>
+    </div>
+</body>
+</html>

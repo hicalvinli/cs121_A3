@@ -1,9 +1,10 @@
 import streamlit as st
-from search import load_index_and_metadata, load_doc_counts, search
+from search import load_secondary_index, load_doc_counts, search
 import time
 
-index, total_docs = load_index_and_metadata()
+secondary_index = load_secondary_index()
 doc_counts = load_doc_counts()
+num_docs = len(doc_counts)
 st.markdown(
     """
     <style>
@@ -65,7 +66,8 @@ with st.container():
 # Handle Search
 if submitted and query:
     start_time = time.time()
-    results = search(query, index, total_docs, doc_counts)
+    with open("data.json", "r") as main_indexfd:
+        results = search(query, main_indexfd, secondary_index, num_docs, doc_counts)
     execution_time = round((time.time() - start_time) * 1000, 2)
 
     # Display Results and Time
