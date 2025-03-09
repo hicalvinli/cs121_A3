@@ -167,7 +167,7 @@ def search(query, main_indexfd, secondary_index, total_docs, doc_freqs, importan
             tf, importance = term_index[doc]
 
             # Calculate tf
-            tf = float(tf) / doc_freqs[doc] * 100
+            tf = float(tf) / doc_freqs[doc] * 100.0
 
             # Calculate idf
             idf = len(term_index)
@@ -229,7 +229,7 @@ def main():
             if len(results) == 0:
                 print("No results found.")
             else:
-                for i, (url, score) in enumerate(results[:5]):
+                for i, (url, score) in enumerate(results[:10]):
                     print(f"{i + 1}. {url} (Score: {score:.2f})")
                     site = ai.Summarizer(url)
                     site.search_corpus()
