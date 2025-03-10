@@ -4,3 +4,4 @@ nltk
 streamlit
 google-genai
 python-dotenv
+flask

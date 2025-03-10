@@ -19,3 +19,6 @@ rsrc/*
 
 # Secure storage of API key
 *.env
+
+# Anver
+*.whl
