@@ -42,7 +42,9 @@ class Summarizer():
 
     def summarize(self, resp): # outputs/returns model's response
         # Temporary for console debug. For web GUI, init Summary class and call query(), outputting response.text on click.
-        print(self.response.text)
+        # print(self.response.text)
+        # WebGUI
+        return self.response.text
 
     def find_matching_dir(self):
         # first directories that match the url based on binary search
