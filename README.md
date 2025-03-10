@@ -3,11 +3,13 @@
 
 ## Setup:
 1. pip install -r "requirements.txt"
-2. Create a .env file within the parent directory. 
-2. Set the first line of the.env file as: GEMINI_API=AIzaSyD5lm5HrCvSAmu24Zwcx8rOyk_xYD8vhWA. This is the API key used for the AI summaries of our top results.
-3. Create a directory in the parent directory: "rsrc"
-4. Create a directory in "rsrc": "DEV-2"
-5. Within "DEV-2", add every developer directory corresponding to subdomains with file information within.
+2. If you cannot pip install, please download .whl files for LXML and Google GenAI. Then:
+pip install C:/some-dir/some-file.whl
+3. Create a .env file within the parent directory. 
+4. Set the first line of the.env file as: GEMINI_API=AIzaSyD5lm5HrCvSAmu24Zwcx8rOyk_xYD8vhWA. This is the API key used for the AI summaries of our top results.
+5. Create a directory in the parent directory: "rsrc"
+6. Create a directory in "rsrc": "DEV-2"
+7. Within "DEV-2", add every developer directory corresponding to subdomains with file information within.
 
 File Structure (within zipped parent directory):
 
@@ -19,8 +21,8 @@ File Structure (within zipped parent directory):
                 └── 9a59f63e6facdc3e5fe5aa105c603b545d4145769a107b4dc388312a85cf76d5.json
             ├── alderis_ics_uci_edu ...
 
-3. Run index.py. This may take a while (~600-900 seconds for a M2 MacBook Air).
-4. In the terminal, run python app2.py. 
-5. The search engine should appear- queries can be made in the search bar, and summaries can be generated for each site on click.
+8. Run index.py. This may take a while (~600-900 seconds for a M2 MacBook Air).
+9. In the terminal, run python app2.py. 
+10. The search engine should appear- queries can be made in the search bar, and summaries can be generated for each site on click.
 
 Note: summaries may take 5-30 seconds to load depending on the user's local machine.
