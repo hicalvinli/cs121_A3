@@ -80,8 +80,6 @@ h2 {
 }
 
 .result-index {
-    font-weight: bold;
-    margin-right: 16px;
 }
 
 .result-details {
@@ -98,7 +96,6 @@ h2 {
 .result-score {
     color: #333;
     font-size: 0.9rem;
-    margin-top: 4px;
 }
 
 .caption {
