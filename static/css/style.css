@@ -62,6 +62,7 @@ input[type="text"] {
     'wght' 400,
     'GRAD' 0,
     'opsz' 24;
+    opacity: 50%;
 }
 
 h2 {
@@ -119,4 +120,19 @@ h2 {
     background-color: #026cd2;
 }
 
+.show-summary-btn {
+    background-color: #058bf2;
+    color: #ffffff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+}
 
+.show-summary-btn:hover {
+    background-color: #026cd2
+}
