@@ -48,8 +48,6 @@ def main():
     global DOC_COUNTS
     global INDEX
     relative = "rsrc/DEV-2"
-    # I use windows so i cant use rsrc :(
-    # relative = "C:\\Users\\anver\\Downloads\\dev-2\\DEV"
 
     # Iterate through every folder
     for folder in os.listdir(relative):
