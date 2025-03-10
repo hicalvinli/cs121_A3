@@ -1,71 +1,125 @@
 body {
-    font-family: "Sans Serif Collection", serif;
+    font-family: "Varela Round", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 30px;
 }
 
 .search-container {
-    display: flex;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 25px;
+    border-radius: 8px;
+    text-align: center;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    margin-top: 50px;
 }
 
 .title {
     font-size: 80px;
-    font-weight: bold;
+    font-weight: 400;
     background: linear-gradient(to left, #ff9f9c, #058bf2);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     text-align: center;
+    margin: 0 0 20px;
 }
 
-form {
-    margin-top: 20px;
+.search-form {
+    display: inline-block;
+    position: relative;
 }
 
 input[type="text"] {
-    padding: 10px;
-    width: 300px;
-    font-size: 1.1rem;
+    width: 675px;
+    padding: 10px 40px 10px 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 25px;
+    opacity: 70%;
 }
 
-button {
-    padding: 10px 20px;
-    font-size: 1.1rem;
-    margin-left: 10px;
+.search-button {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #333;
+    font-size: 1.2rem;
+    padding: 0 10px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+h2 {
+    margin-top: 30px;
+    text-align: center;
 }
 
 .result-box {
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin: 1rem 0;
+    border: 1px solid #ddd;
+    border-radius: 15px;
+    padding: 16px;
+    margin: 16px auto;
     display: flex;
     align-items: center;
+    width: 725px;
 }
 
 .result-index {
-    font-size: 1.2rem;
-    margin-right: 20px;
+    font-weight: bold;
+    margin-right: 16px;
 }
 
 .result-details {
     flex-grow: 1;
+    text-align: center;
 }
 
 .result-url a {
-    color: #000000;
-    font-size: 1.1rem;
+    color: #058bf2;
+    font-size: 1rem;
     text-decoration: none;
 }
 
 .result-score {
-    color: #000000;
+    color: #333;
     font-size: 0.9rem;
+    margin-top: 4px;
 }
 
 .caption {
-    text-align: center;
     font-style:italic;
+    margin-bottom: 20px;
+    text-align: center;
 }
+
+.load-more-btn {
+    padding: 10px 20px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 4px;
+    background-color: #058bf2;
+    color: #ffffff;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+.load-more-btn:hover {
+    background-color: #026cd2;
+}
+
 
