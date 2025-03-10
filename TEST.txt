@@ -1,0 +1,48 @@
+ACM
+Iftekhar Ahmed
+Cristina Lopes
+Master of Software Engineering
+Management Information Student Society
+Cosine similarity and jaccard similarity
+Input/Output devices
+human computer interaction
+HCI
+women in cs
+intelligent systems
+Thornton
+biology
+sociology
+research opportunities
+undergraduate research
+
+Initial errors:
+Many of the queries, especially those which were longer, initially returned large databases,
+HTML/PDF files, or long lists of low-information text. Additionally, longer queries (ie. Master
+of Software Engineering) took longer than 300 ms to process, as we were looking in an entire
+index loaded into main memory. We also did not use tf-idf rankings, and initially opted for
+term frequency as our sole ranking algorithm. For some professors, we received research paper submissions
+or long files with little information instead of faculty profiles. We often received duplicate
+content as well.
+
+Example: "Cosine similarity and jaccard similarity"
+Results:
+http://flamingo.ics.uci.edu/releases/4.1/docs/CommonDoc.html (Score: 29.57)
+http://flamingo.ics.uci.edu/releases/3.0/docs/CommonDoc.html (Score: 29.57)
+http://flamingo.ics.uci.edu/releases/4.0/docs/CommonDoc.html (Score: 29.57)
+http://flamingo.ics.uci.edu/releases/2.0/docs/CommonDoc.html (Score: 28.98)
+http://flamingo.ics.uci.edu/releases/2.0.1/docs/CommonDoc.html (Score: 28.98)
+
+Changes we made:
+Ultimately, we changed the ranking algorithms, indexing techniques, and searching to better
+our query results.
+
+1. We created a byte offset index to store in main memory (aka secondary index) to access and store
+results quicker.
+2. We normalized the tf within our ranking calculations to take file size into account.
+3. We used the standard tf-idf ranking to improve our results.
+4. We modified our importance score to 'boost' ranking scores when query terms were found in
+important HTML tags. We penalized files with low token count (<200) or high token count (>10000).
+5. We utilized simhash and checksum to avoid duplicates when indexing.
+6. We ignored files with under 70 tokens to avoid wasting time on null or extremely small content.
+7. We used binary search methods within our generative AI implementation to search through the
+corpus at a faster rate.

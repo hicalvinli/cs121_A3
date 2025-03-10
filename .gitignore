@@ -15,7 +15,6 @@ rsrc/*
 
 # Storage of json
 *.json
-*.txt
 
 # Secure storage of API key
 *.env
