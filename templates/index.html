@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <title>CLAM Search Engine</title>
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static' , filename='css/style.css') }}">
+    <!-- Link to your main CSS file -->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+
     <!-- Google Fonts and Icon -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,13 +18,21 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=search"
     />
 </head>
+
+<body>
     <div class="search-container">
         <!-- Title -->
         <h1 class="title">Welcome to CLAM</h1>
         <!-- HTML form to send POST request when submitted -->
-        <form method="post" action ="/" class="search-form">
+        <form method="post" action="/" class="search-form">
             <!-- Input field for the search query -->
-            <input type="text" name = "query" placeholder="Enter Query" value="{{ query }}" required>
+            <input
+              type="text"
+              name="query"
+              placeholder="Enter Query"
+              value="{{ query }}"
+              required
+            >
             <!-- Button to submit search -->
             <button type="submit" class="search-button">
                 <i class="material-symbols-outlined-search"></i>
@@ -32,40 +42,40 @@
 
     <!-- Check if query was submitted -->
     {% if query %}
-        <!-- Display Results if they exist -->
+        <!-- Display results if they exist -->
         {% if results %}
             <h2>Top Results for '{{ query }}'</h2>
             <p class="caption">Found {{ results|length }} results in {{ exec_time }} ms</p>
-            <!-- Loop through each result, hide results by default-->
-            {% for result in results %}
-            <!-- Container for each result -->
+
+            <!-- Loop through each result, hide results by default -->
+            {% for url, score in results %}
             <div class="result-box" style="display: none;">
-                <!-- Result number -->
-                <div class="result-index">{{ loop.index }}</div>
-                <!-- Result Details -->
                 <div class="result-details">
-                    <!-- Display the details of URL -->
+                    <!-- Display the URL -->
                     <div class="result-url">
-                        <a href="{{ result[0] }}" target="_blank">{{ result[0] }}</a>
+                        <a href="{{ url }}" target="_blank">{{ url }}</a>
                     </div>
-                    <!-- Display relevancy score -->
-                    <div class="result-score">Relevance Score: {{ "%.2f"|format(result[1]) }}</div>
+                    <button type="button" class="show-summary-btn" data-url="{{ url}}" data-query="{{ query }}">Summary</button>
+                    <div class="result-summary" style="display: none;"></div>
+                    <!-- Display the relevance score -->
+                    <div class="result-score">Relevance Score: {{ "%.2f"|format(score) }}</div>
                 </div>
             </div>
-        {% endfor %}
-        <!-- If there are more than 5 results for the query -->
-        <!-- Give the option to load more -->
-        {% if results|length > 5 %}
-        <div style="text-align: center; margin-top: 20px;">
-            <button id="loadMoreButton" class="load-more-btn">Load More</button>
-        </div>
-        {% endif %}
-    <!-- No results -->
-    {% else %}
-        <p class="no-results">No results found for query</p>
-    {% endif %}
-{% endif %}
+            {% endfor %}
 
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+            <!-- If there are more than 5 results, show a "Load More" button -->
+            {% if results|length > 5 %}
+            <div style="text-align: center; margin-top: 16px;">
+                <button id="loadMoreButton" class="load-more-btn">Load More</button>
+            </div>
+            {% endif %}
+        <!-- No results found -->
+        {% else %}
+            <p class="no-results">No results found for query</p>
+        {% endif %}
+    {% endif %}
+
+    <!-- Reference your external JS file that handles "Load More" -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
