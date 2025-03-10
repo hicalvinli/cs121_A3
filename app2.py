@@ -1,8 +1,7 @@
 import time
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 from search import load_secondary_index, load_doc_counts, search
-
-
+from ai import Summarizer
 app = Flask(__name__)
 
 # Load indexes
@@ -29,6 +28,32 @@ def index_page():
 
     # Render the index.html
     return render_template("index.html", results=results, query=query, exec_time=exec_time)
+
+# Display Summary for WebGUI
+@app.route("/summarize", methods=["POST"])
+def summarize():
+    try:
+        # Parse JSON data from POST request
+        data = request.get_json()
+        # Extract the url and query
+        url = data["url"]
+        query = data["query"]
+
+        summarizer = Summarizer(url)
+        # Load the corpus for summarization
+        summarizer.search_corpus()
+        # Retrieve response of the query
+        response = summarizer.query(query)
+        # Process response to generate summary text
+        summary_text = summarizer.summarize(response)
+
+        # Return the generated summary
+        return jsonify({"summary": summary_text})
+
+    # Error Handling
+    except Exception as e:
+            print("Error in summarization:", e)
+            return jsonify({"error": str(e)}), 500
 
 # Start Flask Web Server
 if __name__ == "__main__":
