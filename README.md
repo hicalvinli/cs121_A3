@@ -1,6 +1,4 @@
-# Welcome to CLAM!
-### Calvin, Lawrence, Anver, and Maggie's Search Engine.
-
+# Welcome to CLAM
 ## Setup:
 1. pip install -r "requirements.txt"
 2. If you cannot pip install, please download .whl files for LXML and Google GenAI. Then:
